@@ -14,6 +14,18 @@ class Empreendedor(Base):
     telefone = Column(String, nullable=False)
     data_cadastro = Column(DateTime, default=datetime.now, nullable=False)
 
+class Empresa(Base):
+    __tablename__= "empresa"
+
+    id_empresa = Column(Integer, primary_key=True, index=True)
+    nome = Column(String, nullable=False)
+    data_fundacao = Column(Date, nullable=False) 
+    cnpj = Column(String, nullable=False)
+    segmento= Column(String, nullable=False)
+    endereco = Column(String, nullable=False)
+    porte = Column(String, nullable=False)
+    num_funcionarios = Column(Integer, nullable=False)
+    
 class Trilha(Base):
     __tablename__= "trilha"
 

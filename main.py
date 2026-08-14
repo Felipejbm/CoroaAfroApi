@@ -1,9 +1,8 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-
-
 from database import Base, engine, get_db
+
 from schemas import (
     EmpreendedorCreate, 
     LoginReq, 
@@ -89,6 +88,28 @@ def criar_empreendedor(empreendedor: EmpreendedorCreate, db: Session = Depends(g
         "Empreendedor": novo_empreendedor
     }
 
+@app.post('/criar-empresa')
+def criar_empresa(empresa: EmpresaCreate, db: Session = Depends(get_db)):
+    nova_empresa = Empresa(
+        nome = empresa.nome,
+        data_fundacao = empresa.data_fundacao,
+        cnpj = empresa.cnpj,
+        segmento = empresa.segmento,
+        endereco = empresa.endereco,
+        porte = empresa.porte,
+        num_funcionarios = empresa.num_funcionarios
+    )
+
+    db.add(nova_empresa)
+    db.commit()
+    db.refresh(nova_empresa)
+
+    return{
+        "Msg": "Empresa criada com sucesso!",
+        "Empresa": nova_empresa
+
+    }  
+  
 @app.post('/criar-trilha')
 def criar_trilha(trilha: TrilhaCreate, db: Session = Depends(get_db)):
     nova_trilha = Trilha(
@@ -228,6 +249,5 @@ def buscar_metricas_marketing(metricas: MetricasMarketingCreate, db: Session = D
         "Msg": "Trilha criada com sucesso!",
         "Empreendedor": novas_metricas
     }
-
 
 
