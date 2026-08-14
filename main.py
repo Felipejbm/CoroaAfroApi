@@ -13,7 +13,8 @@ from schemas import (
     PostagemChatCreate,
     TransacoesCreate,
     SaldoCreate,
-    MetricasMarketingCreate
+    MetricasMarketingCreate,
+    EmpresaCreate
 )
 from models import (
     Empreendedor, 
@@ -24,7 +25,8 @@ from models import (
     PostagemChat,
     Transacao,
     Saldo,
-    MetricasMarketing
+    MetricasMarketing,
+    Empresa
 )
 
 Base.metadata.create_all(bind=engine) 
