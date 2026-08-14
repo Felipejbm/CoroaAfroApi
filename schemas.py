@@ -22,3 +22,4 @@ class EmpresaCreate(BaseModel):
     endereco: str
     porte: str
     num_funcionarios: int
+

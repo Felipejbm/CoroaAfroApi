@@ -87,4 +87,5 @@ def criar_empresa(empresa: EmpresaCreate, db: Session = Depends(get_db)):
     return{
         "Msg": "Empresa criada com sucesso!",
         "Empresa": nova_empresa
+
     }

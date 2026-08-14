@@ -2,8 +2,6 @@ from sqlalchemy import Column, Integer, String, DateTime, Date
 from datetime import datetime 
 
 from database import Base
-
-
 class Empreendedor(Base):
     __tablename__= "empreendedor"
 
