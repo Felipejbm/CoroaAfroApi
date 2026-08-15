@@ -11,7 +11,18 @@ class EmpreendedorCreate(BaseModel):
     senha: str
     telefone: str
     data_cadastro: date
-
+      
+class EmpresaCreate(BaseModel):
+    nome: str
+    data_fundacao: date
+    cnpj: str
+    segmento: str
+    endereco: str
+    porte: str
+    num_funcionarios: int
+    faturamento_meta_mensal: float 
+    saldo_atual: float
+      
 class TrilhaCreate(BaseModel):
     titulo: str
     tipo_trilha: str
@@ -29,6 +40,7 @@ class MensagemChatCreate(BaseModel):
     texto_mensagem: str
     data_envio: date
     lida: bool
+    remetente: str
 
 class PostagemChatCreate(BaseModel):
     conteudo_texto: str

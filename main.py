@@ -89,6 +89,30 @@ def criar_empreendedor(empreendedor: EmpreendedorCreate, db: Session = Depends(g
         "Empreendedor": novo_empreendedor
     }
 
+@app.post('/criar-empresa')
+def criar_empresa(empresa: EmpresaCreate, db: Session = Depends(get_db)):
+    nova_empresa = Empresa(
+        nome = empresa.nome,
+        data_fundacao = empresa.data_fundacao,
+        cnpj = empresa.cnpj,
+        segmento = empresa.segmento,
+        endereco = empresa.endereco,
+        porte = empresa.porte,
+        num_funcionarios = empresa.num_funcionarios,
+        faturamento_meta_mensal = empresa.faturamento_meta_mensal,
+        saldo_atual = empresa.saldo_atual
+    )
+
+    db.add(nova_empresa)
+    db.commit()
+    db.refresh(nova_empresa)
+
+    return{
+        "Msg": "Empresa criada com sucesso!",
+        "Empresa": nova_empresa
+
+    }  
+  
 @app.post('/criar-trilha')
 def criar_trilha(trilha: TrilhaCreate, db: Session = Depends(get_db)):
     nova_trilha = Trilha(
@@ -117,7 +141,7 @@ def criar_atividade(atividade: AtividadeCreate, db: Session = Depends(get_db)):
     db.refresh(nova_atividade)
 
     return{
-        "Msg": "Trilha criada com sucesso!",
+        "Msg": "Atividade criada com sucesso!",
         "Empreendedor": nova_atividade
     }
 
@@ -134,7 +158,7 @@ def criar_mentor(mentor: MentorCreate, db: Session = Depends(get_db)):
     db.refresh(novo_mentor)
 
     return{
-        "Msg": "Trilha criada com sucesso!",
+        "Msg": "Mentor criado com sucesso!",
         "Empreendedor": novo_mentor
     }
 
@@ -143,7 +167,8 @@ def criar_mensagem(mensagem: MensagemChatCreate, db: Session = Depends(get_db)):
     nova_mensagem = MensagemChat(
         texto_mensagem = mensagem.texto_mensagem,
         data_envio = mensagem.data_envio,
-        lida = mensagem.lida
+        lida = mensagem.lida,
+        remetente = mensagem.remetente
     )
 
     db.add(nova_mensagem)
@@ -151,7 +176,7 @@ def criar_mensagem(mensagem: MensagemChatCreate, db: Session = Depends(get_db)):
     db.refresh(nova_mensagem)
 
     return{
-        "Msg": "Trilha criada com sucesso!",
+        "Msg": "Mensagem criada com sucesso!",
         "Empreendedor": nova_mensagem
     }
 
@@ -168,7 +193,7 @@ def criar_postagem(postagem: PostagemChatCreate, db: Session = Depends(get_db)):
     db.refresh(nova_postagem)
 
     return{
-        "Msg": "Trilha criada com sucesso!",
+        "Msg": "Postagem criada com sucesso!",
         "Empreendedor": nova_postagem
     }
 
@@ -176,6 +201,7 @@ def criar_postagem(postagem: PostagemChatCreate, db: Session = Depends(get_db)):
 def adicionar_trasacao(transacao: TransacoesCreate, db: Session = Depends(get_db)):
     nova_transacao = Transacao(
         valor = transacao.valor,
+        tipo_transacao = transacao.tipo_transacao,
         data = transacao.data,
         status = transacao.status
     )
@@ -185,7 +211,7 @@ def adicionar_trasacao(transacao: TransacoesCreate, db: Session = Depends(get_db
     db.refresh(nova_transacao)
 
     return{
-        "Msg": "Trilha criada com sucesso!",
+        "Msg": "Transação criada com sucesso!",
         "Empreendedor": nova_transacao
     }
 
@@ -198,7 +224,7 @@ def adicionar_saldo(saldo: SaldoCreate, db: Session = Depends(get_db)):
         total_entradas = saldo.total_entradas,
         total_saidas = saldo.total_saidas,
         valor_inicial = saldo.valor_inicial,
-        valor_final =  saldo.saldo_final
+        saldo_final =  saldo.saldo_final
     )
 
     db.add(novo_saldo)
@@ -206,7 +232,7 @@ def adicionar_saldo(saldo: SaldoCreate, db: Session = Depends(get_db)):
     db.refresh(novo_saldo)
 
     return{
-        "Msg": "Trilha criada com sucesso!",
+        "Msg": "Saldo criado com sucesso!",
         "Empreendedor": novo_saldo
     }
 
@@ -225,7 +251,7 @@ def buscar_metricas_marketing(metricas: MetricasMarketingCreate, db: Session = D
     db.refresh(novas_metricas)
 
     return{
-        "Msg": "Trilha criada com sucesso!",
+        "Msg": "Métricas atualizadas com sucesso!",
         "Empreendedor": novas_metricas
     }
 

@@ -1,8 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Float, Date
 from datetime import datetime 
-
 from database import Base
-
 
 class Empreendedor(Base):
     __tablename__= "empreendedor"
@@ -14,6 +12,20 @@ class Empreendedor(Base):
     telefone = Column(String, nullable=False)
     data_cadastro = Column(DateTime, default=datetime.now, nullable=False)
 
+class Empresa(Base):
+    __tablename__= "empresa"
+
+    id_empresa = Column(Integer, primary_key=True, index=True)
+    nome = Column(String, nullable=False)
+    data_fundacao = Column(Date, nullable=False) 
+    cnpj = Column(String, nullable=False)
+    segmento= Column(String, nullable=False)
+    endereco = Column(String, nullable=False)
+    porte = Column(String, nullable=False)
+    num_funcionarios = Column(Integer, nullable=False)
+    faturamento_meta_mensal = Column(Float, nullable=False)
+    saldo_atual = Column(Float, nullable=False)
+    
 class Trilha(Base):
     __tablename__= "trilha"
 
@@ -42,9 +54,10 @@ class MensagemChat(Base):
     id_mensagem = Column(Integer, primary_key=True, index=True)
     texto_mensagem = Column(String, nullable=False)
     data_envio = Column(DateTime, default=datetime.now, nullable=False)
-    lida = Column(String, nullable=False)
+    lida = Column(String, nullable=False, default=False)
+    remetente = Column(String, nullable=False)
 
-class PostagemChat:
+class PostagemChat(Base):
     __tablename__ = "postagem"
 
     id_post = Column(Integer, primary_key=True, index=True)
@@ -52,15 +65,16 @@ class PostagemChat:
     midia_url = Column(String)
     data_publicacao = Column(DateTime, default=datetime.now, nullable=False)
 
-class Transacao:
+class Transacao(Base):
     __tablename__ = "transacoes"
 
     id_transacao = Column(Integer, primary_key=True, index=True)
+    tipo_transacao = Column(String, nullable=False)
     valor = Column(Float, nullable=False)
     data = Column(DateTime, nullable=False)
-    status = Column(Boolean, nullable=False)
+    status = Column(String, nullable=False, default="Pendente")
 
-class Saldo:
+class Saldo(Base):
     __tablename__ = "saldo"
 
     id_saldo = Column(Integer, primary_key=True, index=True)
@@ -72,10 +86,10 @@ class Saldo:
     valor_inicial = Column(Float, nullable=False)
     saldo_final = Column(Float, nullable=False)
 
-class MetricasMarketing:
+class MetricasMarketing(Base):
     __tablename__ = "metricas_marketing"
 
-    id_saldo = Column(Integer, primary_key=True, index=True)
+    id_metrica = Column(Integer, primary_key=True, index=True)
     data_coleta = Column(DateTime,default=datetime.now, nullable=False)
     seguidores_total = Column(Integer, nullable=False)
     alcance_postagem = Column(Integer, nullable=False)
