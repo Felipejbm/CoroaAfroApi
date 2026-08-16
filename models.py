@@ -11,8 +11,8 @@ class EmpreendedorDB(Base):
     senha = Column(String, nullable=False)
     telefone = Column(String, nullable=False)
     data_cadastro = Column(DateTime, default=datetime.now, nullable=False)
-
-class EmpresaDB(Base):
+    
+class Empresa(Base):
     __tablename__= "empresa"
 
     id_empresa = Column(Integer, primary_key=True, index=True)
@@ -23,10 +23,8 @@ class EmpresaDB(Base):
     endereco = Column(String, nullable=False)
     porte = Column(String, nullable=False)
     num_funcionarios = Column(Integer, nullable=False)
-    faturamento_meta_mensal = Column(Float, nullable=False)
-    saldo_atual = Column(Float, nullable=False)
-    
-class TrilhaDB(Base):
+
+class Trilha(Base):
     __tablename__= "trilha"
 
     id_trilha = Column(Integer, primary_key=True, index=True)

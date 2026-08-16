@@ -1,3 +1,4 @@
+
 from pydantic import BaseModel
 from datetime import date
 
@@ -11,7 +12,7 @@ class EmpreendedorCreate(BaseModel):
     senha: str
     telefone: str
     data_cadastro: date
-      
+
 class EmpresaCreate(BaseModel):
     nome: str
     data_fundacao: date
@@ -20,8 +21,6 @@ class EmpresaCreate(BaseModel):
     endereco: str
     porte: str
     num_funcionarios: int
-    faturamento_meta_mensal: float 
-    saldo_atual: float
       
 class TrilhaCreate(BaseModel):
     titulo: str
