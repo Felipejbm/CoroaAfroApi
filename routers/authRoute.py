@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from database import get_db
-from schemas import LoginReq
-from models import Empreendedor
+from schemas.database.schemas import LoginReq
+from models import EmpreendedorDB
 
 router = APIRouter(
     prefix="/auth",
@@ -15,8 +15,8 @@ def logar(
     dados: LoginReq,
     db: Session = Depends(get_db)
 ):
-    empreendedor = db.query(Empreendedor).filter(
-        Empreendedor.email == dados.email
+    empreendedor = db.query(EmpreendedorDB).filter(
+        EmpreendedorDB.email == dados.email
     ).first()
 
     if not empreendedor:

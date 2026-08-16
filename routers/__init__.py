@@ -11,6 +11,7 @@ from .authRoute import router as auth_router
 from .empreendedorRoute import router as empreendedor_router
 
 all_router = [
+    auth_router,
     atividade_router,
     trilha_router,
     transacao_router,
@@ -20,6 +21,5 @@ all_router = [
     mentor_router,
     mensagem_router,
     empresa_router,
-    auth_router,
     empreendedor_router
 ]
