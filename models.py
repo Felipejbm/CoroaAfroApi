@@ -12,7 +12,7 @@ class EmpreendedorDB(Base):
     telefone = Column(String, nullable=False)
     data_cadastro = Column(DateTime, default=datetime.now, nullable=False)
     
-class Empresa(Base):
+class EmpresaDB(Base):
     __tablename__= "empresa"
 
     id_empresa = Column(Integer, primary_key=True, index=True)
@@ -24,7 +24,7 @@ class Empresa(Base):
     porte = Column(String, nullable=False)
     num_funcionarios = Column(Integer, nullable=False)
 
-class Trilha(Base):
+class TrilhaDB(Base):
     __tablename__= "trilha"
 
     id_trilha = Column(Integer, primary_key=True, index=True)
