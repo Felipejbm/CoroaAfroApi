@@ -9,6 +9,7 @@ from .mensagemRoute import router as mensagem_router
 from .empresaRoute import router as empresa_router
 from .authRoute import router as auth_router
 from .empreendedorRoute import router as empreendedor_router
+from .instagramRoute import router as instagram_router
 
 all_router = [
     auth_router,
@@ -21,5 +22,6 @@ all_router = [
     mentor_router,
     mensagem_router,
     empresa_router,
-    empreendedor_router
+    empreendedor_router,
+    instagram_router
 ]
