@@ -1,10 +1,8 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, Date
+from sqlalchemy import Column, Integer, String, DateTime, Float, Date
 from datetime import datetime 
-
 from database import Base
 
-
-class Empreendedor(Base):
+class EmpreendedorDB(Base):
     __tablename__= "empreendedor"
 
     id_empreendedor = Column(Integer, primary_key=True, index=True)
@@ -13,8 +11,8 @@ class Empreendedor(Base):
     senha = Column(String, nullable=False)
     telefone = Column(String, nullable=False)
     data_cadastro = Column(DateTime, default=datetime.now, nullable=False)
-
-class Empresa(Base):
+    
+class EmpresaDB(Base):
     __tablename__= "empresa"
 
     id_empresa = Column(Integer, primary_key=True, index=True)
@@ -25,22 +23,22 @@ class Empresa(Base):
     endereco = Column(String, nullable=False)
     porte = Column(String, nullable=False)
     num_funcionarios = Column(Integer, nullable=False)
-    
-class Trilha(Base):
+
+class TrilhaDB(Base):
     __tablename__= "trilha"
 
     id_trilha = Column(Integer, primary_key=True, index=True)
     titulo = Column(String, nullable=False)
     tipo_trilha = Column(String, unique=True, nullable=False)
 
-class Atividade(Base):
+class AtividadeDB(Base):
     __tablename__= "atividade"
 
     id_atividade = Column(Integer, primary_key=True, index=True)
     titulo_tarefa = Column(String, nullable=False)
     conteudo = Column(String, unique=True, nullable=False)
 
-class Mentor(Base):
+class MentorDB(Base):
     __tablename__= "mentor"
 
     id_mentor = Column(Integer, primary_key=True, index=True)
@@ -48,15 +46,16 @@ class Mentor(Base):
     especialidade = Column(String, nullable=False)
     biografia = Column(String, nullable=False)
 
-class MensagemChat(Base):
+class MensagemChatDB(Base):
     __tablename__="mensagem_chat"
 
     id_mensagem = Column(Integer, primary_key=True, index=True)
     texto_mensagem = Column(String, nullable=False)
     data_envio = Column(DateTime, default=datetime.now, nullable=False)
-    lida = Column(String, nullable=False)
+    lida = Column(String, nullable=False, default=False)
+    remetente = Column(String, nullable=False)
 
-class PostagemChat:
+class PostagemChatDB(Base):
     __tablename__ = "postagem"
 
     id_post = Column(Integer, primary_key=True, index=True)
@@ -64,15 +63,16 @@ class PostagemChat:
     midia_url = Column(String)
     data_publicacao = Column(DateTime, default=datetime.now, nullable=False)
 
-class Transacao:
+class TransacaoDB(Base):
     __tablename__ = "transacoes"
 
     id_transacao = Column(Integer, primary_key=True, index=True)
+    tipo_transacao = Column(String, nullable=False)
     valor = Column(Float, nullable=False)
     data = Column(DateTime, nullable=False)
-    status = Column(Boolean, nullable=False)
+    status = Column(String, nullable=False, default="Pendente")
 
-class Saldo:
+class SaldoDB(Base):
     __tablename__ = "saldo"
 
     id_saldo = Column(Integer, primary_key=True, index=True)
@@ -84,10 +84,10 @@ class Saldo:
     valor_inicial = Column(Float, nullable=False)
     saldo_final = Column(Float, nullable=False)
 
-class MetricasMarketing:
+class MetricasMarketingDB(Base):
     __tablename__ = "metricas_marketing"
 
-    id_saldo = Column(Integer, primary_key=True, index=True)
+    id_metrica = Column(Integer, primary_key=True, index=True)
     data_coleta = Column(DateTime,default=datetime.now, nullable=False)
     seguidores_total = Column(Integer, nullable=False)
     alcance_postagem = Column(Integer, nullable=False)
