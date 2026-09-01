@@ -4,7 +4,7 @@ from config import get_settings
 
 DATABASE_URL = get_settings().database_url
 
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import hmac
+import secrets
 from datetime import datetime, timedelta
 from typing import Any
 from urllib.parse import urlencode
@@ -60,7 +61,9 @@ class MetaGraphService:
         self._fernet = Fernet(base64.urlsafe_b64encode(encryption_key))
 
     def authorization_url(self, empreendedor_id: int) -> str:
-        state = self._state_serializer.dumps({"empreendedor_id": empreendedor_id})
+        state = self._state_serializer.dumps({
+            "empreendedor_id": empreendedor_id, "nonce": secrets.token_urlsafe(32),
+        })
         query = urlencode(
             {
                 "client_id": self.settings.meta_app_id,

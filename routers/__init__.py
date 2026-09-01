@@ -10,8 +10,16 @@ from .empresaRoute import router as empresa_router
 from .authRoute import router as auth_router
 from .empreendedorRoute import router as empreendedor_router
 from .instagramRoute import router as instagram_router
+from .mentoriaRoute import router as mentoria_router
+from .metasRoute import router as metas_router
+from .aprendizadoRoute import router as aprendizado_router
+from .chatMentoriaRoute import router as chat_mentoria_router
 
 all_router = [
+    chat_mentoria_router,
+    aprendizado_router,
+    metas_router,
+    mentoria_router,
     auth_router,
     atividade_router,
     trilha_router,

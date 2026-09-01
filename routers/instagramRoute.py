@@ -3,16 +3,27 @@ from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+import hmac
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from config import Settings, get_settings
 from database import get_db
-from models import EmpreendedorDB, MetaInstagramConnectionDB
+from models import AuthSessionDB, EmpreendedorDB, MetaInstagramConnectionDB
+from security import get_current_user, get_auth_session, token_hash
 from services.meta_graph import MetaGraphError, MetaGraphService
 
 
 router = APIRouter(tags=["Instagram"])
+
+
+def authenticated_instagram_id(
+    empreendedor_id: int | None = Query(default=None, gt=0),
+    user: EmpreendedorDB = Depends(get_current_user),
+) -> int:
+    if empreendedor_id is not None and empreendedor_id != user.id_empreendedor:
+        raise HTTPException(403, "Você não pode acessar a conexão de outro usuário.")
+    return user.id_empreendedor
 
 
 def _service(settings: Settings) -> MetaGraphService:
@@ -80,19 +91,21 @@ def _sanitize_meta_response(value: Any) -> Any:
 
 @router.get("/auth/meta", summary="Iniciar conexão com Instagram")
 def iniciar_oauth_meta(
-    empreendedor_id: int = Query(gt=0),
+    empreendedor_id: int = Depends(authenticated_instagram_id),
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
+    session: AuthSessionDB = Depends(get_auth_session),
 ):
     empreendedor = db.query(EmpreendedorDB).filter(
         EmpreendedorDB.id_empreendedor == empreendedor_id
     ).first()
     if not empreendedor:
         raise HTTPException(status_code=404, detail="Empreendedor não encontrado.")
-    return RedirectResponse(
-        _service(settings).authorization_url(empreendedor_id),
-        status_code=307,
-    )
+    url = _service(settings).authorization_url(empreendedor_id)
+    state = dict(parse_qsl(urlsplit(url).query))["state"]
+    session.oauth_state_hash = token_hash(state)
+    db.commit()
+    return RedirectResponse(url, status_code=307)
 
 
 @router.get("/auth/meta/callback", summary="Callback OAuth da Meta")
@@ -103,7 +116,12 @@ async def callback_oauth_meta(
     error_description: str | None = None,
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_settings),
+    session: AuthSessionDB = Depends(get_auth_session),
 ):
+    if not session.oauth_state_hash or not hmac.compare_digest(session.oauth_state_hash, token_hash(state)):
+        raise HTTPException(400, "Autorização inválida ou já utilizada. Inicie novamente.")
+    session.oauth_state_hash = None
+    db.commit()
     if error:
         raise HTTPException(
             status_code=400,
@@ -115,6 +133,8 @@ async def callback_oauth_meta(
     service = _service(settings)
     try:
         empreendedor_id = service.read_state(state)
+        if empreendedor_id != session.id_empreendedor:
+            raise MetaGraphError("Autorização não pertence ao usuário conectado.", 403)
         user_token, expires_at = await service.exchange_code(code)
         accounts = await service.discover_instagram_accounts(user_token)
     except MetaGraphError as exc:
@@ -166,7 +186,7 @@ async def callback_oauth_meta(
 
 @router.get("/instagram/profile", summary="Obter perfil profissional do Instagram")
 async def obter_perfil_instagram(
-    empreendedor_id: int = Query(gt=0),
+    empreendedor_id: int = Depends(authenticated_instagram_id),
     db: Session = Depends(get_db),
 ):
     connection, service, token = _connection(empreendedor_id, db)
@@ -181,7 +201,7 @@ async def obter_perfil_instagram(
 
 @router.get("/instagram/media", summary="Listar mídias do Instagram")
 async def listar_midias_instagram(
-    empreendedor_id: int = Query(gt=0),
+    empreendedor_id: int = Depends(authenticated_instagram_id),
     limit: int = Query(default=25, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
@@ -201,7 +221,7 @@ async def listar_midias_instagram(
 
 @router.get("/instagram/insights", summary="Obter insights da conta do Instagram")
 async def obter_insights_conta(
-    empreendedor_id: int = Query(gt=0),
+    empreendedor_id: int = Depends(authenticated_instagram_id),
     metric: str = Query(default="reach", pattern=r"^[a-z_]+(,[a-z_]+)*$"),
     period: str = Query(default="day", pattern=r"^(day|week|days_28|lifetime)$"),
     since: str | None = None,
@@ -229,7 +249,7 @@ async def obter_insights_conta(
 )
 async def obter_insights_midia(
     media_id: str,
-    empreendedor_id: int = Query(gt=0),
+    empreendedor_id: int = Depends(authenticated_instagram_id),
     metric: str = Query(
         default="reach,likes,comments,saved,shares",
         pattern=r"^[a-z_]+(,[a-z_]+)*$",

@@ -1,7 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from database import Base, engine
 from routers import all_router
+from config import get_settings
+from security import require_migrated_module
 
 Base.metadata.create_all(bind=engine) 
 
@@ -13,12 +15,15 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins= [
-        "http://localhost:5173"
+        get_settings().frontend_origin
     ],
     allow_credentials= True, 
     allow_methods=["*"],
     allow_headers=["*"]
 )
 
-for router in all_router: 
-    app.include_router(router)
+for router in all_router:
+    # Old CRUD has no ownership relationship. Keep it closed until each module is migrated.
+    safe_prefixes = {"/auth", "/empresa", "/empreendedor", "/mentoria", "/metas", ""}
+    dependencies = [] if router.prefix in safe_prefixes else [Depends(require_migrated_module)]
+    app.include_router(router, dependencies=dependencies)

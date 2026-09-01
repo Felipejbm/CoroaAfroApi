@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     meta_token_encryption_key: str | None = None
     meta_graph_api_version: str = "v26.0"
     meta_success_redirect_url: str | None = None
+    frontend_origin: str = "http://localhost:5173"
+    session_cookie_secure: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",

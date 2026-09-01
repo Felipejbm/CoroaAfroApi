@@ -1,81 +1,64 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-
 from database import get_db
 from models import EmpreendedorDB
 from schemas.database.schemas import EmpreendedorCreate
-from schemas.EmpreendedorSchema.EmpreendedorSchema import (
-    EmpreendedorPorIdResponse,
-    EmpreendedorAtualizarResponse,
-    EmpreendedorAtualizar
-    )
+from schemas.EmpreendedorSchema.EmpreendedorSchema import EmpreendedorAtualizar
+from security import get_current_user, hash_password, public_user, validate_origin
+from services.company_identity import usuario_vinculado
 
-router = APIRouter(
-    prefix="/empreendedor",
-    tags=["Empreendedor"]
-)
+router = APIRouter(prefix="/empreendedor", tags=["Empreendedor"])
 
-@router.post('')
-def criar_empreendedor(empreendedor: EmpreendedorCreate, db: Session = Depends(get_db)):
-    novo_empreendedor = EmpreendedorDB(
-        nome = empreendedor.nome,
-        email = empreendedor.email,
-        senha = empreendedor.senha,
-        telefone = empreendedor.telefone,
-    )
 
-    db.add(novo_empreendedor)
-    db.commit()
-    db.refresh(novo_empreendedor)
+def saida(user):
+    return {**public_user(user), "id_empreendedor": user.id_empreendedor}
 
-    return{
-        "Msg": "Empreendedor criado com sucesso!",
-        "Empreendedor": novo_empreendedor
-    }
 
-@router.get('')
-def litar_empreendedores(db: Session = Depends(get_db)):
-    empreendedores_banco = db.query(EmpreendedorDB).all()
+@router.post("", status_code=201, dependencies=[Depends(validate_origin)])
+def criar_empreendedor(dados: EmpreendedorCreate, db: Session = Depends(get_db)):
+    if not dados.nome.strip() or not dados.email.strip() or not dados.senha or not dados.telefone.strip():
+        raise HTTPException(422, "Preencha nome, e-mail, senha e telefone.")
+    novo = EmpreendedorDB(nome=dados.nome.strip(), email=dados.email.strip(),
+                         senha=hash_password(dados.senha), telefone=dados.telefone.strip())
+    db.add(novo)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Já existe uma conta com esse e-mail.")
+    db.refresh(novo)
+    return {"Msg": "Empreendedor criado com sucesso!", "Empreendedor": saida(novo)}
 
-    return empreendedores_banco
 
-@router.get('/{id_empreendedor}', response_model=EmpreendedorPorIdResponse)
-def obter_empreendedor_por_id(id_empreendedor: int, db: Session = Depends(get_db)):
-    empreendedor_banco = db.query(EmpreendedorDB).filter(EmpreendedorDB.id_empreendedor == id_empreendedor).first()
+@router.get("")
+def listar_empreendedores(user: EmpreendedorDB = Depends(get_current_user)):
+    return [saida(user)]
 
-    if not empreendedor_banco:
-        raise HTTPException(status_code=404, detail="Empreendedor não encontrada")
-    return  empreendedor_banco
 
-@router.patch('/{id_empreendedor}', response_model=EmpreendedorAtualizarResponse)
-def atualizar_empreendedor(
-        id_empreendedor: int, 
-        empreendedor_data: EmpreendedorAtualizar,
-        db: Session = Depends(get_db) 
-        ):
-    empreendedor_banco = db.query(EmpreendedorDB).filter(EmpreendedorDB.id_empreendedor == id_empreendedor).first()
+@router.get("/{id_empreendedor}")
+def obter_empreendedor_por_id(id_empreendedor: int, user: EmpreendedorDB = Depends(get_current_user)):
+    if id_empreendedor != user.id_empreendedor:
+        raise HTTPException(404, "Empreendedor não encontrado.")
+    return saida(user)
 
-    if not empreendedor_banco:
-        raise HTTPException(status_code=404, detail=("Empreendedor não encontrada"))
 
-    empreendedor_atualizado = empreendedor_data.model_dump(exclude_unset=True)
-
-    for chave, valor in empreendedor_atualizado.items():
-        setattr(empreendedor_banco, chave, valor)
-
-    db.commit()
-    db.refresh(empreendedor_banco)
-
-    return empreendedor_banco
-
-@router.delete('/{id_empreendedor}')
-def deletar_empreendedor(id_empreendedor: int, db: Session = Depends(get_db)):
-    empreendedor_banco = db.query(EmpreendedorDB).filter(EmpreendedorDB.id_empreendedor == id_empreendedor). first()
-
-    if not empreendedor_banco:
-        raise HTTPException(status_code=404, detail="Empreendedor não encontrada")
-
-    db.delete(empreendedor_banco)
-    db.commit()
-
-    return "Empreendedor deletado com sucesso"
+@router.patch("/{id_empreendedor}")
+def atualizar_empreendedor(id_empreendedor: int, dados: EmpreendedorAtualizar,
+                           db: Session = Depends(get_db), user: EmpreendedorDB = Depends(get_current_user)):
+    obter_empreendedor_por_id(id_empreendedor, user)
+    usuario = usuario_vinculado(db, user)
+    limits = {"nome": 150 if usuario else 255, "email": 150 if usuario else 255, "telefone": 20}
+    for key, value in dados.model_dump(exclude_unset=True).items():
+        if value is None or not value.strip() or len(value.strip()) > limits[key]:
+            raise HTTPException(422, f"Campo inválido: {key}.")
+        setattr(user, key, value.strip())
+        if usuario:
+            setattr(usuario, key, value.strip())
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Já existe uma conta com esse e-mail.")
+    db.refresh(user)
+    return saida(user)

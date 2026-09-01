@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Banco de dados: `coroa-afro`
+-- Banco de dados: `coroa_afro`
 --
 
 -- --------------------------------------------------------
@@ -67,7 +67,6 @@ CREATE TABLE `empreendedor` (
 -- Despejando dados para a tabela `empreendedor`
 --
 
-INSERT INTO `empreendedor` (`id_empreendedor`, `nome`, `email`, `senha`, `telefone`, `data_cadastro`, `data_nascimento`, `cpf`, `genero`) VALUES
 (1, 'teste', 'teste@gmail.com', '123', '999', '2026-08-06', NULL, NULL, NULL),
 (2, 'teste2', 'teste2@gmail.com', '123', '999', '2026-08-06', NULL, NULL, NULL),
 (3, 'teste3', 'teste3@gmail.com', '123', '999', '2026-08-06', NULL, NULL, NULL);
@@ -96,7 +95,6 @@ CREATE TABLE `empresa` (
 -- Despejando dados para a tabela `empresa`
 --
 
-INSERT INTO `empresa` (`id_empresa`, `nome`, `cnpj`, `porte`, `endereco`, `segmento`, `faturamento_meta_mensal`, `saldo_atual`, `fk_empreendedor_id_empreendedor`, `data_fundacao`, `num_funcionarios`) VALUES
 (0, 'teste', 'teste', 'teste', 'teste', 'teste', NULL, NULL, NULL, '2026-08-07', 412);
 
 -- --------------------------------------------------------
