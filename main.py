@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from database import Base, engine
-from routers import all_router
 from config import get_settings
 from security import require_migrated_module
+from routers import all_router
 
 Base.metadata.create_all(bind=engine) 
 

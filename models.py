@@ -1,4 +1,18 @@
-from sqlalchemy import Boolean, Column, Integer, String, DateTime, Float, Date, Text, ForeignKey, Numeric, ForeignKeyConstraint, UniqueConstraint, Index
+from sqlalchemy import (
+    Boolean, 
+    Column, 
+    Integer, 
+    String, 
+    DateTime, 
+    Float, 
+    Date, 
+    Text, 
+    ForeignKey, 
+    Numeric, 
+    ForeignKeyConstraint, 
+    UniqueConstraint, 
+    Index
+    )
 from datetime import datetime 
 from database import Base
 
