@@ -1,6 +1,31 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import Base, engine
+from sqlalchemy.orm import Session
+from database import Base, engine, get_db
+from schemas import (
+    EmpreendedorCreate, 
+    LoginReq, 
+    TrilhaCreate, 
+    AtividadeCreate,
+    MensagemChatCreate,
+    MentorCreate, 
+    PostagemChatCreate,
+    TransacoesCreate,
+    SaldoCreate,
+    MetricasMarketingCreate,
+    EmpresaCreate
+)
+from models import (
+    Empreendedor, 
+    Trilha, 
+    Atividade, 
+    MensagemChat, 
+    Mentor, 
+    PostagemChat,
+    Transacao,
+    Saldo,
+    MetricasMarketing
+)
 from routers import all_router
 
 Base.metadata.create_all(bind=engine) 
