@@ -10,9 +10,18 @@ from config import get_settings
 from database import get_db
 from models import AuthSessionDB, EmpreendedorDB, MentorSessionDB, MentorAccessDB, MentorDB
 from security import (
-    COOKIE_NAME, get_auth_session, get_current_user, hash_password,
-    public_user, token_hash, validate_origin, verify_password, get_current_mentor, public_mentor,
+    COOKIE_NAME, 
+    hash_password,
+    token_hash, 
+    validate_origin,
+    verify_password, 
 )
+from dependencies import (
+    get_auth_session,
+    get_current_user,
+    get_current_mentor
+)
+from schemas.AuthSchema.AuthSchema import MentorPublic, EmpreendedorPublic
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -49,7 +58,7 @@ def logar(dados: LoginReq, request: Request, response: Response, db: Session = D
         response.set_cookie(COOKIE_NAME, token, max_age=8 * 3600, httponly=True,
                             secure=get_settings().session_cookie_secure, samesite="lax", path="/")
         response.headers["Cache-Control"] = "no-store"
-        return {"Msg": "Login realizado com sucesso!", "Usuario": public_mentor(mentor, access)}
+        return {"Msg": "Login realizado com sucesso!", "Usuario": MentorPublic(mentor, access)}
     user = db.query(EmpreendedorDB).filter(EmpreendedorDB.email == dados.email.strip()).first()
     if not user or not verify_password(dados.senha, user.senha):
         raise HTTPException(401, "E-mail ou senha incorretos.")
@@ -69,7 +78,10 @@ def logar(dados: LoginReq, request: Request, response: Response, db: Session = D
         secure=get_settings().session_cookie_secure, samesite="lax", path="/",
     )
     response.headers["Cache-Control"] = "no-store"
-    return {"Msg": "Login realizado com sucesso!", "Empreendedor": public_user(user)}
+    return {
+        "Msg": "Login realizado com sucesso!", 
+        "Empreendedor": EmpreendedorPublic.model_validate(user)
+        }
 
 
 @router.get("/me")
@@ -78,9 +90,20 @@ def me(request: Request, response: Response, db: Session = Depends(get_db)):
     cookie = request.cookies.get(COOKIE_NAME, "")
     if cookie and db.get(MentorSessionDB, token_hash(cookie)):
         mentor = get_current_mentor(request, db)
-        return public_mentor(mentor, db.get(MentorAccessDB, mentor.id_mentor))
+        access = db.get(MentorAccessDB, mentor.id_mentor)
+
+        return MentorPublic(
+            id_mentor=mentor.id_mentor,
+            nome=mentor.nome,
+            email=access.email if access else "",
+            especialidade=mentor.especialidade,
+            biografia=mentor.biografia,
+        )
+    
     session = get_auth_session(request, db)
-    return public_user(get_current_user(session, db))
+    user = get_current_user(session, db)
+
+    return EmpreendedorPublic.model_validate(user)
 
 
 @router.post("/logout", dependencies=[Depends(validate_origin)])

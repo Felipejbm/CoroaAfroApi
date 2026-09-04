@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from config import Settings, get_settings
 from database import get_db
 from models import AuthSessionDB, EmpreendedorDB, MetaInstagramConnectionDB
-from security import get_current_user, get_auth_session, token_hash
+from dependencies import get_current_user, get_auth_session, token_hash
 from services.meta_graph import MetaGraphError, MetaGraphService
 
 

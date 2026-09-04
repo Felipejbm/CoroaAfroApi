@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from database import get_db
 from models import MentorDB, MentoriaDB, EmpreendedorDB, EmpresaDB, EmpresaEmpreendedorDB
-from security import get_current_mentor
+from dependencies import get_current_mentor
 
 router = APIRouter(prefix="/mentoria", tags=["Mentoria"])
 

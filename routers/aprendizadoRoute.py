@@ -7,11 +7,18 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy.orm import Session
 
 from database import get_db
-from models import (MentorDB, MentorAccessDB, EmpreendedorDB, MentoriaDB,
-                    MentoriaTrilhaDB as Trilha, MentoriaAulaDB as Aula,
-                    MentoriaAtribuicaoDB as Atribuicao, MentoriaProgressoDB as Progresso,
-                    MentoriaCatalogoDB as Catalogo)
-from security import get_current_mentor, get_current_user
+from models import (
+    MentorDB, 
+    MentorAccessDB, 
+    EmpreendedorDB,
+    MentoriaDB,
+    MentoriaTrilhaDB as Trilha, 
+    MentoriaAulaDB as Aula,
+    MentoriaAtribuicaoDB as Atribuicao, 
+    MentoriaProgressoDB as Progresso,
+    MentoriaCatalogoDB as Catalogo
+    )
+from dependencies import get_current_mentor, get_current_user
 
 
 def no_cache(response: Response):
