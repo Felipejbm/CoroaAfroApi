@@ -22,7 +22,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Banco de dados: `coroa_afro`
+-- Banco de dados: `coroa-afro`
 --
 
 -- --------------------------------------------------------

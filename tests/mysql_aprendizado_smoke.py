@@ -15,8 +15,8 @@ from security import hash_password
 
 
 def verificar():
-    if engine.dialect.name not in {'mysql', 'mariadb'} or engine.url.database != 'coroa_afro':
-        raise RuntimeError('Teste limitado ao MySQL coroa_afro.')
+    if engine.dialect.name not in {'mysql', 'mariadb'} or engine.url.database != 'coroa-afro':
+        raise RuntimeError('Teste limitado ao MySQL coroa-afro.')
     tabelas = {'empreendedor', 'mentor', 'mentor_access', 'mentor_session', 'auth_session',
                'mentoria_mensagem', 'mentoria_catalogo', 'mentoria_vinculo', 'mentoria_trilha', 'mentoria_aula', 'mentoria_atribuicao', 'mentoria_progresso'}
     with engine.connect() as preflight:
