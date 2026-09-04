@@ -14,8 +14,8 @@ from security import hash_password
 
 
 def verificar():
-    if engine.dialect.name not in {"mysql", "mariadb"} or engine.url.database != "coroa_afro":
-        raise RuntimeError("Teste limitado ao MySQL coroa_afro.")
+    if engine.dialect.name not in {"mysql", "mariadb"} or engine.url.database != "coroa-afro":
+        raise RuntimeError("Teste limitado ao MySQL coroa-afro.")
     tabelas = {"usuario", "empreendedor", "empresa", "empresa_empreendedor", "empreendedor_usuario", "auth_session"}
     with engine.connect() as preflight:
         rows = preflight.execute(text("SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()"))

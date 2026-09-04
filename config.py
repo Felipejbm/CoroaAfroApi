@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = "mysql+pymysql://root:@localhost/coroa_afro"
+    database_url: str = "mysql+pymysql://root:@localhost/coroa-afro"
 
     meta_app_id: str | None = None
     meta_app_secret: str | None = None
