@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import MentorDB
-from schemas.database.schemas import MentorCreate
 from schemas.MentorSchema.MentorSchema import (
     MentorPorIdResponse,
     MentorAtualizarResponse,
-    MentorAtualizar
+    MentorAtualizar,
+    MentorCreate
 )
 
 router = APIRouter(

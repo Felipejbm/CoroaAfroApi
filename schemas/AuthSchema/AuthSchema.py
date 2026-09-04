@@ -1,7 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
-
 class EmpreendedorPublic(BaseModel):
     id_empreendedor: int
     nome: str
@@ -11,7 +10,6 @@ class EmpreendedorPublic(BaseModel):
     papel: str = "empreendedor"
 
     model_config = ConfigDict(from_attributes=True)
-
 
 class MentorPublic(BaseModel):
     id: int

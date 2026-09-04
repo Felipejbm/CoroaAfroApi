@@ -3,11 +3,10 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import TransacaoDB
-from schemas.database.schemas import TransacoesCreate
 from schemas.TransacaoSchema.TransacaoSchema import (
     TransacaoPorIdResponse,
-    TransacaoAtualizarResponse,
-    TransacaoAtualizar
+    TransacaoAtualizar,
+    TransacoesCreate
 )
 
 router = APIRouter(

@@ -32,3 +32,12 @@ class SaldoAtualizarResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class SaldoCreate(BaseModel):
+    saldo: float
+    meta_faturamento: float
+    data: date
+    total_entradas: int
+    total_saidas: int
+    valor_inicial: float
+    saldo_final: float

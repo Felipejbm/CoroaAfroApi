@@ -8,7 +8,6 @@ engine = create_engine(DATABASE_URL, echo=False)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# Função de dependência: abre uma sessão por requisição e garante o fechamento
 def get_db():
     db = SessionLocal()
     try:

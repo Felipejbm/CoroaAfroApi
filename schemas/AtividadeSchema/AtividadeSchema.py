@@ -20,3 +20,7 @@ class AtividadeAtualizarResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class AtividadeCreate(BaseModel):
+    titulo_tarefa: str
+    conteudo: str

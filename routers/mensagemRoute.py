@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import MensagemChatDB
-from schemas.database.schemas import MensagemChatCreate
 from schemas.MensagemSchema.MensagemSchema import (
     MensagemAtualizarResponse,
     MensagemPorIdResponse,
-    MensagemAtualizar
+    MensagemAtualizar,
+    MensagemChatCreate
 )
 
 router = APIRouter(

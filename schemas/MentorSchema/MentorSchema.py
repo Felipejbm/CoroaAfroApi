@@ -23,3 +23,8 @@ class MentorAtualizarResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class MentorCreate(BaseModel):
+    nome: str
+    especialidade: str
+    biografia: str

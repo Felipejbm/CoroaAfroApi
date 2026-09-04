@@ -3,11 +3,9 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import MetricasMarketingDB
-from schemas.database.schemas import MetricasMarketingCreate
 from schemas.MetricasMarketingSchema.MetricasMarketingSchema import (
     MetricasMarketingPorIdResponse,
-    MetricasMarketingAtualizarResponse,
-    MetricasMarketingAtualizar
+    MetricasMarketingCreate
 )
 
 router = APIRouter(
