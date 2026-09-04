@@ -44,7 +44,6 @@ class EmpreendedorUsuarioDB(Base):
     id_empreendedor = Column(Integer, ForeignKey("empreendedor.id_empreendedor"), primary_key=True)
     id_usuario = Column(Integer, ForeignKey("usuario.id_usuario"), nullable=False, unique=True)
 
-
 class EmpresaDB(Base):
     __tablename__= "empresa"
 
@@ -65,12 +64,12 @@ class EmpresaDB(Base):
     cidade = Column(String(100), nullable=True)
     estado = Column(String(2), nullable=True)
     cep = Column(String(8), nullable=True)
+    
 class EmpresaEmpreendedorDB(Base):
     __tablename__ = "empresa_empreendedor"
 
     id_empreendedor = Column(Integer, ForeignKey("empreendedor.id_empreendedor"), primary_key=True)
     id_empresa = Column(Integer, ForeignKey("empresa.id_empresa"), nullable=False, unique=True)
-
 
 class AuthSessionDB(Base):
     __tablename__ = "auth_session"
@@ -80,7 +79,6 @@ class AuthSessionDB(Base):
     expires_at = Column(DateTime, nullable=False)
     oauth_state_hash = Column(String(64), nullable=True)
 
-
 class MentorAccessDB(Base):
     __tablename__ = "mentor_access"
     id_mentor = Column(Integer, ForeignKey("mentor.id_mentor"), primary_key=True)
@@ -88,20 +86,17 @@ class MentorAccessDB(Base):
     senha_hash = Column(String(255), nullable=False)
     ativo = Column(Boolean, nullable=False, default=True)
 
-
 class MentorSessionDB(Base):
     __tablename__ = "mentor_session"
     token_hash = Column(String(64), primary_key=True)
     id_mentor = Column(Integer, ForeignKey("mentor.id_mentor"), nullable=False)
     expires_at = Column(DateTime, nullable=False)
 
-
 class MentoriaDB(Base):
     __tablename__ = "mentoria_vinculo"
     id_mentor = Column(Integer, ForeignKey("mentor.id_mentor"), primary_key=True)
     id_empreendedor = Column(Integer, ForeignKey("empreendedor.id_empreendedor"), primary_key=True)
     ativo = Column(Boolean, nullable=False, default=True)
-
 
 class MetaEmpreendedorDB(Base):
     __tablename__ = "meta_empreendedor"
@@ -116,7 +111,6 @@ class MetaEmpreendedorDB(Base):
     arquivada = Column(Boolean, nullable=False, default=False)
     versao = Column(Integer, nullable=False, default=1)
 
-
 class MentoriaTrilhaDB(Base):
     __tablename__ = "mentoria_trilha"
     id = Column(Integer, primary_key=True)
@@ -126,13 +120,11 @@ class MentoriaTrilhaDB(Base):
     publicada = Column(Boolean, nullable=False, default=False)
     versao = Column(Integer, nullable=False, default=1)
 
-
 class MentoriaCatalogoDB(Base):
     __tablename__ = "mentoria_catalogo"
     id_trilha = Column(Integer, ForeignKey("mentoria_trilha.id"), primary_key=True)
     categoria = Column(String(32), nullable=False, default="geral", index=True)
     publico_alvo = Column(String(500), nullable=False, default="")
-
 
 class MentoriaAulaDB(Base):
     __tablename__ = "mentoria_aula"
@@ -143,19 +135,16 @@ class MentoriaAulaDB(Base):
     conteudo = Column(Text, nullable=False)
     video_url = Column(String(2048), nullable=True)
 
-
 class MentoriaAtribuicaoDB(Base):
     __tablename__ = "mentoria_atribuicao"
     id_trilha = Column(Integer, ForeignKey("mentoria_trilha.id"), primary_key=True)
     id_empreendedor = Column(Integer, ForeignKey("empreendedor.id_empreendedor"), primary_key=True)
-
 
 class MentoriaProgressoDB(Base):
     __tablename__ = "mentoria_progresso"
     id_aula = Column(Integer, ForeignKey("mentoria_aula.id"), primary_key=True)
     id_empreendedor = Column(Integer, ForeignKey("empreendedor.id_empreendedor"), primary_key=True)
     concluida = Column(Boolean, nullable=False, default=False)
-
 
 class TrilhaDB(Base):
     __tablename__= "trilha"
@@ -195,7 +184,6 @@ class MentoriaMensagemDB(Base):
         Index("ix_chat_conversa_id", "id_mentor", "id_empreendedor", "id"),
         {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_unicode_ci"},
     )
-
 
 class MensagemChatDB(Base):
     __tablename__="mensagem_chat"
@@ -244,7 +232,6 @@ class MetricasMarketingDB(Base):
     alcance_postagem = Column(Integer, nullable=False)
     engajamento_taxa = Column(Integer, nullable=False)
     cliques_bio = Column(Integer, nullable=False)
-
 
 class MetaInstagramConnectionDB(Base):
     __tablename__ = "meta_instagram_connection"

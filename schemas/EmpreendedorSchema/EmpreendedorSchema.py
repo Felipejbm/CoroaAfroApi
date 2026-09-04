@@ -26,3 +26,10 @@ class EmpreendedorAtualizarResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class EmpreendedorCreate(BaseModel):
+    nome: str
+    email: str
+    senha: str
+    telefone: str
+    data_cadastro: date

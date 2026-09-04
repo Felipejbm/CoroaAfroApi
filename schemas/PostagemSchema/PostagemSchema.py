@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-
+from datetime import date
 class PostagemPorIdResponse(BaseModel):
     id_post: int
     conteudo_texto: str 
@@ -23,3 +23,8 @@ class PostagemAtualizarResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class PostagemChatCreate(BaseModel):
+    conteudo_texto: str
+    midia_url: str
+    data_publicacao: date

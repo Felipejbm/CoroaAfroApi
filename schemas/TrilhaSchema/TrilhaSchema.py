@@ -21,3 +21,7 @@ class TrilhaAtualizarResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class TrilhaCreate(BaseModel):
+    titulo: str
+    tipo_trilha: str

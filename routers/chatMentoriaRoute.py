@@ -5,9 +5,23 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 from database import get_db
-from models import (MentoriaDB, MentorAccessDB, MentorDB, EmpreendedorDB,
-                    MentorSessionDB, MentoriaMensagemDB as Mensagem)
-from security import (COOKIE_NAME, token_hash, get_current_mentor, get_current_user, get_auth_session)
+from models import (
+    MentoriaDB, 
+    MentorAccessDB, 
+    MentorDB, 
+    EmpreendedorDB,
+    MentorSessionDB, 
+    MentoriaMensagemDB as Mensagem
+    )
+from security import (
+    COOKIE_NAME, 
+    token_hash, 
+    )
+from dependencies import (
+    get_auth_session,
+    get_current_mentor,
+    get_current_user
+)
 
 
 def sem_cache(response: Response):

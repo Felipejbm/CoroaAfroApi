@@ -3,16 +3,27 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from database import get_db
 from models import EmpreendedorDB
-from schemas.database.schemas import EmpreendedorCreate
-from schemas.EmpreendedorSchema.EmpreendedorSchema import EmpreendedorAtualizar
-from security import get_current_user, hash_password, public_user, validate_origin
+from schemas.EmpreendedorSchema.EmpreendedorSchema import EmpreendedorAtualizar, EmpreendedorCreate
+from security import (
+    hash_password,
+    validate_origin
+)
+from dependencies import (
+    get_current_user
+)
+from schemas.AuthSchema.AuthSchema import MentorPublic, EmpreendedorPublic
 from services.company_identity import usuario_vinculado
 
 router = APIRouter(prefix="/empreendedor", tags=["Empreendedor"])
 
 
-def saida(user):
-    return {**public_user(user), "id_empreendedor": user.id_empreendedor}
+def saida(user: EmpreendedorDB):
+    dados_publicos = EmpreendedorPublic.model_validate(user)
+
+    return {
+        **dados_publicos.model_dump(), 
+        "id_empreendedor": user.id_empreendedor
+        }
 
 
 @router.post("", status_code=201, dependencies=[Depends(validate_origin)])

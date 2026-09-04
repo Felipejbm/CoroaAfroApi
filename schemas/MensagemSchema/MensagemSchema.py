@@ -27,3 +27,9 @@ class MensagemAtualizarResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class MensagemChatCreate(BaseModel):
+    texto_mensagem: str
+    data_envio: date
+    lida: bool
+    remetente: str
