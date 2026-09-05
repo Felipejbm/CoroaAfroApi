@@ -12,7 +12,6 @@ from services.company_identity import criar_vinculo_usuario
 
 router = APIRouter(prefix="/empresa", tags=["Empresa"])
 
-
 class EmpresaEntrada(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True, extra="forbid")
     nome: str = Field(min_length=1, max_length=150)
@@ -110,17 +109,22 @@ def criar_empresa(empresa: EmpresaEntrada, db: Session = Depends(get_db), user: 
         usuario = criar_vinculo_usuario(db, user)
         dados = empresa.model_dump()
         dados["cnpj"] = dados["cnpj"] or None
-        nova = EmpresaDB(**dados, id_usuario=usuario.id_usuario)
+
+        nova = EmpresaDB(
+            **dados, 
+            fk_empreendedor_id_empreendedor=user.id_empreendedor
+        )
         db.add(nova)
         db.flush()
         db.add(EmpresaEmpreendedorDB(id_empreendedor=user.id_empreendedor, id_empresa=nova.id_empresa))
         db.commit()
-    except IntegrityError:
+    except IntegrityError as e:
         db.rollback()
-        raise HTTPException(409, "Não foi possível cadastrar: já existe empresa, CNPJ ou usuário com esses dados.")
+        raise HTTPException(409, f"Não foi possível cadastrar: {e.orig}")
     except HTTPException:
         db.rollback()
         raise
+
     db.refresh(nova)
     return {"Msg": "Empresa criada com sucesso!", "Empresa": saida(nova)}
 
