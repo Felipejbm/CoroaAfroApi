@@ -1,0 +1,64 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+from database import get_db
+from models import EmpreendedorDB
+from schemas.database.schemas import EmpreendedorCreate
+from schemas.EmpreendedorSchema.EmpreendedorSchema import EmpreendedorAtualizar
+from security import get_current_user, hash_password, public_user, validate_origin
+from services.company_identity import usuario_vinculado
+
+router = APIRouter(prefix="/empreendedor", tags=["Empreendedor"])
+
+
+def saida(user):
+    return {**public_user(user), "id_empreendedor": user.id_empreendedor}
+
+
+@router.post("", status_code=201, dependencies=[Depends(validate_origin)])
+def criar_empreendedor(dados: EmpreendedorCreate, db: Session = Depends(get_db)):
+    if not dados.nome.strip() or not dados.email.strip() or not dados.senha or not dados.telefone.strip():
+        raise HTTPException(422, "Preencha nome, e-mail, senha e telefone.")
+    novo = EmpreendedorDB(nome=dados.nome.strip(), email=dados.email.strip(),
+                         senha=hash_password(dados.senha), telefone=dados.telefone.strip())
+    db.add(novo)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Já existe uma conta com esse e-mail.")
+    db.refresh(novo)
+    return {"Msg": "Empreendedor criado com sucesso!", "Empreendedor": saida(novo)}
+
+
+@router.get("")
+def listar_empreendedores(user: EmpreendedorDB = Depends(get_current_user)):
+    return [saida(user)]
+
+
+@router.get("/{id_empreendedor}")
+def obter_empreendedor_por_id(id_empreendedor: int, user: EmpreendedorDB = Depends(get_current_user)):
+    if id_empreendedor != user.id_empreendedor:
+        raise HTTPException(404, "Empreendedor não encontrado.")
+    return saida(user)
+
+
+@router.patch("/{id_empreendedor}")
+def atualizar_empreendedor(id_empreendedor: int, dados: EmpreendedorAtualizar,
+                           db: Session = Depends(get_db), user: EmpreendedorDB = Depends(get_current_user)):
+    obter_empreendedor_por_id(id_empreendedor, user)
+    usuario = usuario_vinculado(db, user)
+    limits = {"nome": 150 if usuario else 255, "email": 150 if usuario else 255, "telefone": 20}
+    for key, value in dados.model_dump(exclude_unset=True).items():
+        if value is None or not value.strip() or len(value.strip()) > limits[key]:
+            raise HTTPException(422, f"Campo inválido: {key}.")
+        setattr(user, key, value.strip())
+        if usuario:
+            setattr(usuario, key, value.strip())
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Já existe uma conta com esse e-mail.")
+    db.refresh(user)
+    return saida(user)

@@ -328,7 +328,7 @@ class CompanySessionTests(unittest.TestCase):
             page_access_token="fake-page-token",
         )])
         fake.encrypt_token.return_value = "encrypted-test-token"
-        with patch("routers.instagram._service", return_value=fake):
+        with patch("routers.instagramRoute._service", return_value=fake):
             self.assertEqual(self.client.get("/auth/meta", follow_redirects=False).status_code, 307)
             r = self.client.get("/auth/meta/callback?state=test-state&code=fake", follow_redirects=False)
             self.assertIn(r.status_code, (200, 303), r.text)

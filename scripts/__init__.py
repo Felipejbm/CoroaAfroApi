@@ -1,1 +1,0 @@
-"""Ferramentas administrativas executadas localmente."""
