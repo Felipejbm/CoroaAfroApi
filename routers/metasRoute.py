@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy.orm import Session
 from database import get_db
 from models import EmpreendedorDB, MetaEmpreendedorDB
-from security import get_current_user
+from dependencies import get_current_user
 
 router = APIRouter(prefix="/metas", tags=["Metas"])
 

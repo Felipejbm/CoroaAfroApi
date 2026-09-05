@@ -27,3 +27,9 @@ class TransacaoAtualizarResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class TransacoesCreate(BaseModel):
+    tipo_transacao: str
+    valor: float
+    data: date
+    status: str

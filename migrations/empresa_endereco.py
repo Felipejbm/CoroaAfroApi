@@ -14,8 +14,8 @@ COLUNAS = {
 
 
 def migrar(aplicar=False):
-    if engine.dialect.name not in {"mysql", "mariadb"} or engine.url.database != "coroa_afro":
-        raise RuntimeError("Migração destinada apenas ao MySQL coroa_afro.")
+    if engine.dialect.name not in {"mysql", "mariadb"} or engine.url.database != "coroa-afro":
+        raise RuntimeError("Migração destinada apenas ao MySQL coroa-afro.")
     insp = inspect(engine)
     existentes = {c["name"] for c in insp.get_columns("empresa")}
     obrigatorias = {"id_empresa", "id_usuario", "nome_empresa", "nome_fantasia", "numero_funcionarios", "endereco", "cnpj", "porte"}

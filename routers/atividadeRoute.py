@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import AtividadeDB
-from schemas.database.schemas import AtividadeCreate
 from schemas.AtividadeSchema.AtividadeSchema import (
     AtividadePorIdResponse, 
     AtividadeAtualizarResponse, 
-    AtividadeAtualizar
+    AtividadeAtualizar,
+    AtividadeCreate
     )
 
 router = APIRouter(

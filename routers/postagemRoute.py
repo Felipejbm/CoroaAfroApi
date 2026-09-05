@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import PostagemChatDB
-from schemas.database.schemas import PostagemChatCreate
 from schemas.PostagemSchema.PostagemSchema import (
     PostagemPorIdResponse,
     PostagemAtualizarResponse,
-    PostagemAtualizar
+    PostagemAtualizar,
+    PostagemChatCreate
 )
 
 

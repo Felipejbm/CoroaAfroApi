@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import TrilhaDB
-from schemas.database.schemas import TrilhaCreate
 from schemas.TrilhaSchema.TrilhaSchema import (
     TrilhaPorIdResponse,
     TrilhaAtualizarResponse,
-    TrilhaAtualizar
+    TrilhaAtualizar,
+    TrilhaCreate
 )
 
 router = APIRouter(

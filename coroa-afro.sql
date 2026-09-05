@@ -2,6 +2,10 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
+
+CREATE DATABASE IF NOT EXISTS `coroa-afro` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `coroa-afro`;
+
 -- Host: 127.0.0.1
 -- Tempo de geração: 14/08/2026 às 22:21
 -- Versão do servidor: 10.4.32-MariaDB
@@ -18,7 +22,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Banco de dados: `coroa_afro`
+-- Banco de dados: `coroa-afro`
 --
 
 -- --------------------------------------------------------

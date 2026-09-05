@@ -30,3 +30,10 @@ class MetricasMarketingAtualizarResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class MetricasMarketingCreate(BaseModel):
+    data_coleta: date
+    seguidores_total: int
+    alcance_postagem: int
+    engajamento_taxa: int
+    cliques_bio: int

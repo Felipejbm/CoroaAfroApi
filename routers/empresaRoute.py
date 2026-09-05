@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from database import get_db
 from models import EmpresaDB, EmpresaEmpreendedorDB, EmpreendedorDB
-from security import get_current_user
+from dependencies import get_current_user
 from company_options import NICHOS, PORTES, UFS
 from services.company_identity import criar_vinculo_usuario
 

@@ -14,7 +14,7 @@ python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Crie no MySQL um banco vazio chamado `coroa_afro` e edite somente o `.env` local com o usuário/senha da máquina. Ao iniciar, o SQLAlchemy cria as tabelas ausentes. Para um banco legado que já possua `empresa`, revise e aplique a migração aditiva antes de usar o cadastro:
+Crie no MySQL um banco vazio chamado `coroa-afro` e edite somente o `.env` local com o usuário/senha da máquina. Ao iniciar, o SQLAlchemy cria as tabelas ausentes. Para um banco legado que já possua `empresa`, revise e aplique a migração aditiva antes de usar o cadastro:
 
 ```powershell
 python migrations/empresa_endereco.py
@@ -96,7 +96,7 @@ Verificações:
 .\.venv\Scripts\python.exe tests/mysql_aprendizado_smoke.py --run
 ```
 
-O teste MySQL exige `coroa_afro`, tabelas InnoDB e ausência de triggers nas tabelas envolvidas. Cria dados descartáveis dentro de uma transação com savepoints, reverte e verifica ausência dos registros. Pode deixar lacunas nos IDs auto_increment. Não use para medir concorrência: esse teste é sequencial.
+O teste MySQL exige `coroa-afro`, tabelas InnoDB e ausência de triggers nas tabelas envolvidas. Cria dados descartáveis dentro de uma transação com savepoints, reverte e verifica ausência dos registros. Pode deixar lacunas nos IDs auto_increment. Não use para medir concorrência: esse teste é sequencial.
 
 ## Integração Meta / Instagram
 
@@ -236,7 +236,7 @@ do usuario vinculado. As outras tabelas de usuário/mentoria não foram migradas
 
 ## Migração do banco
 
-Na estrutura atual do coroa_afro, foi aplicada a migração aditiva:
+Na estrutura atual do coroa-afro, foi aplicada a migração aditiva:
 
 ```powershell
 .\.venv\Scripts\python.exe migrations/empresa_endereco.py

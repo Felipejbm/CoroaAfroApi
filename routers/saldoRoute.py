@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import SaldoDB
-from schemas.database.schemas import SaldoCreate
 from schemas.SaldoSchema.SaldoSchema import (
     SaldoPorIdResponse,
     SaldoAtualizarResponse,
-    SaldoAtualizar
+    SaldoAtualizar,
+    SaldoCreate
 )
 
 router = APIRouter(
