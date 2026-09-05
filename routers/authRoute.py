@@ -1,14 +1,16 @@
 import secrets
 from datetime import datetime, timedelta
-
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
-from typing import Literal
-
 from config import get_settings
 from database import get_db
-from models import AuthSessionDB, EmpreendedorDB, MentorSessionDB, MentorAccessDB, MentorDB
+from models import (
+    AuthSessionDB, 
+    EmpreendedorDB, 
+    MentorSessionDB, 
+    MentorAccessDB, 
+    MentorDB
+    )
 from security import (
     COOKIE_NAME, 
     hash_password,
@@ -21,16 +23,13 @@ from dependencies import (
     get_current_user,
     get_current_mentor
 )
-from schemas.AuthSchema.AuthSchema import MentorPublic, EmpreendedorPublic
+from schemas.AuthSchema.AuthSchema import (
+    MentorPublic, 
+    EmpreendedorPublic, 
+    LoginReq
+    )
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
-
-
-class LoginReq(BaseModel):
-    email: str = Field(min_length=3, max_length=255)
-    senha: str = Field(min_length=1, max_length=1024)
-    papel: Literal["empreendedor", "mentor"] = "empreendedor"
-
 
 def clear_sessions(request, db):
     cookie = request.cookies.get(COOKIE_NAME)
@@ -45,21 +44,36 @@ def clear_sessions(request, db):
 def logar(dados: LoginReq, request: Request, response: Response, db: Session = Depends(get_db)):
     if dados.papel == "mentor":
         access = db.query(MentorAccessDB).filter(MentorAccessDB.email == dados.email.strip().lower()).first()
+
         if not access or not access.ativo or not verify_password(dados.senha, access.senha_hash):
             raise HTTPException(401, "E-mail ou senha incorretos, ou mentor não autorizado.")
         mentor = db.get(MentorDB, access.id_mentor)
         if not mentor:
             raise HTTPException(401, "Conta de mentor indisponível.")
+        
         clear_sessions(request, db)
         token = secrets.token_urlsafe(32)
-        db.add(MentorSessionDB(token_hash=token_hash(token), id_mentor=mentor.id_mentor,
-                              expires_at=datetime.utcnow() + timedelta(hours=8)))
+        db.add(MentorSessionDB(
+            token_hash=token_hash(token), 
+            id_mentor=mentor.id_mentor,
+            expires_at=datetime.utcnow() + timedelta(hours=8)
+            ))
         db.commit()
-        response.set_cookie(COOKIE_NAME, token, max_age=8 * 3600, httponly=True,
-                            secure=get_settings().session_cookie_secure, samesite="lax", path="/")
+        response.set_cookie(
+            COOKIE_NAME, 
+            token, 
+            max_age=8 * 3600, 
+            httponly=True,
+            secure=get_settings().session_cookie_secure, 
+            samesite="lax", 
+            path="/"
+            )
         response.headers["Cache-Control"] = "no-store"
+
         return {"Msg": "Login realizado com sucesso!", "Usuario": MentorPublic(mentor, access)}
+    
     user = db.query(EmpreendedorDB).filter(EmpreendedorDB.email == dados.email.strip()).first()
+
     if not user or not verify_password(dados.senha, user.senha):
         raise HTTPException(401, "E-mail ou senha incorretos.")
     if not user.senha.startswith("pbkdf2_sha256$"):
@@ -74,10 +88,17 @@ def logar(dados: LoginReq, request: Request, response: Response, db: Session = D
     ))
     db.commit()
     response.set_cookie(
-        COOKIE_NAME, token, max_age=8 * 3600, httponly=True,
-        secure=get_settings().session_cookie_secure, samesite="lax", path="/",
+        COOKIE_NAME, 
+        token, 
+        max_age=8 * 3600, 
+        httponly=True,
+        secure=get_settings().session_cookie_secure, 
+        samesite="lax", 
+        path="/",
     )
+
     response.headers["Cache-Control"] = "no-store"
+
     return {
         "Msg": "Login realizado com sucesso!", 
         "Empreendedor": EmpreendedorPublic.model_validate(user)

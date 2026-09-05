@@ -48,7 +48,7 @@ class EmpresaDB(Base):
     __tablename__= "empresa"
 
     id_empresa = Column(Integer, primary_key=True, index=True)
-    id_usuario = Column(Integer, ForeignKey("usuario.id_usuario"), nullable=False, unique=True)
+    id_empreendedor = Column(Integer, ForeignKey("usuario.id_usuario"), nullable=False, unique=True)
     nome = Column("nome_empresa", String(150), nullable=False)
     nome_fantasia = Column(String(150), nullable=True)
     data_fundacao = Column(Date, nullable=True)
