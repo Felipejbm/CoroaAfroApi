@@ -22,7 +22,7 @@ python migrations/empresa_endereco.py --apply
 python -m uvicorn main:app --reload
 ```
 
-Abra `http://localhost:8000/docs`. Em outro terminal, execute o frontend. O arquivo `coroa-afro.sql` é um dump legado e não deve ser importado sobre um banco existente; ele não substitui as instruções acima.
+Abra `http://localhost:8000/docs`. Em outro terminal, execute o frontend. O arquivo `sql/coroa_afro_schema.sql` é um esquema legado e não deve ser importado sobre um banco existente; ele não substitui as instruções acima.
 
 O `.env.example` contém apenas nomes e exemplos. Cada integrante cria seu `.env`, que é ignorado pelo Git. Credenciais compartilhadas da Meta devem ser entregues por canal privado; em produção, configure-as no gerenciador de segredos da hospedagem. Nunca coloque segredo em `VITE_*`, porque variáveis do Vite vão para o navegador.
 
@@ -176,10 +176,10 @@ depois que o backend iniciou e criou as novas tabelas. A senha é solicitada sem
 eco no terminal: não coloque senhas em comandos, Git ou mensagens.
 
 ```powershell
-.\.venv\Scripts\python.exe administrar_mentoria.py criar-mentor --nome "Nome do mentor" --email "mentor@example.com" --especialidade "Marketing"
-.\.venv\Scripts\python.exe administrar_mentoria.py vincular --mentor ID_DO_MENTOR --empreendedor ID_DO_EMPREENDEDOR
-.\.venv\Scripts\python.exe administrar_mentoria.py vincular --mentor ID_DO_MENTOR --empreendedor ID_DO_EMPREENDEDOR --remover
-.\.venv\Scripts\python.exe administrar_mentoria.py desativar-mentor --mentor ID_DO_MENTOR
+.\.venv\Scripts\python.exe -m scripts.administrar_mentoria criar-mentor --nome "Nome do mentor" --email "mentor@example.com" --especialidade "Marketing"
+.\.venv\Scripts\python.exe -m scripts.administrar_mentoria vincular --mentor ID_DO_MENTOR --empreendedor ID_DO_EMPREENDEDOR
+.\.venv\Scripts\python.exe -m scripts.administrar_mentoria vincular --mentor ID_DO_MENTOR --empreendedor ID_DO_EMPREENDEDOR --remover
+.\.venv\Scripts\python.exe -m scripts.administrar_mentoria desativar-mentor --mentor ID_DO_MENTOR
 ```
 
 Substitua os IDs por números reais. O programa mostra os nomes e pede confirmação
@@ -255,7 +255,7 @@ endereco_legado e não é separado por heurística. O JSON endereco apresenta o 
 estruturado quando disponível. Cidade e UF têm colunas próprias e índice de consulta.
 
 GET /empresa/opcoes retorna 14 nichos (incluindo Outros), portes/enquadramentos e as 27 UFs.
-POST/PATCH validam as mesmas listas, definidas em company_options.py. O nicho principal fica
+POST/PATCH validam as mesmas listas, definidas em `constants/company.py`. O nicho principal fica
 em empresa.segmento como código estável; a tabela antiga ramo_atividade foi preservada.
 MEI/ME/EPP são opções de enquadramento informado, não classificação jurídica automática.
 
