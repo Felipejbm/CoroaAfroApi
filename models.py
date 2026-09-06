@@ -12,10 +12,13 @@ from sqlalchemy import (
     ForeignKeyConstraint, 
     UniqueConstraint, 
     Index,
-    CheckConstraint
+    CheckConstraint,
+    LargeBinary
     )
 from datetime import datetime 
 from database import Base
+from sqlalchemy.dialects.mysql import MEDIUMBLOB
+from hashlib import sha256
 
 class EmpreendedorDB(Base):
     __tablename__= "empreendedor"
@@ -26,6 +29,14 @@ class EmpreendedorDB(Base):
     senha = Column(String(255), nullable=False)
     telefone = Column(String(20), nullable=False)
     data_cadastro = Column(DateTime, default=datetime.now, nullable=False)
+    foto_perfil = Column(LargeBinary().with_variant(MEDIUMBLOB(), "mysql"), nullable=True)
+
+    @property
+    def foto_perfil_url(self):
+        if not self.foto_perfil:
+            return None
+        versao = sha256(self.foto_perfil).hexdigest()[:16]
+        return f"/empreendedor/me/foto?v={versao}"
     
 class UsuarioDB(Base):
     __tablename__ = "usuario"

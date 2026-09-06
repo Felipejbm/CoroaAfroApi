@@ -1,4 +1,6 @@
 import unittest
+from io import BytesIO
+from PIL import Image
 from uuid import uuid4
 from datetime import datetime, timedelta
 import test_company_session as fixtures
@@ -13,6 +15,43 @@ class ChatTests(unittest.TestCase):
     seed_mentors = fixtures.CompanySessionTests.seed_mentors
     mentor_login = fixtures.CompanySessionTests.mentor_login
     url = '/mentoria/chat/conversas/1/1/mensagens'
+
+    def test_foto_do_contato_e_privada_e_respeita_o_vinculo(self):
+        self.seed_mentors(); self.login()
+        imagem = BytesIO()
+        Image.new('RGB', (30, 30), 'blue').save(imagem, format='PNG')
+        upload = self.client.put('/empreendedor/me/foto', files={
+            'foto': ('foto.png', imagem.getvalue(), 'image/png'),
+        })
+        self.assertEqual(upload.status_code, 200, upload.text)
+        foto_propria = self.client.get('/empreendedor/me/foto').content
+        # A conta do mentor não possui foto cadastrada: não herda a do aluno.
+        self.assertIsNone(self.client.get('/mentoria/chat/conversas').json()[0]['foto_perfil_url'])
+        self.mentor_login()
+        conversa = self.client.get('/mentoria/chat/conversas').json()[0]
+        url = conversa['foto_perfil_url']
+        self.assertIn('/mentoria/chat/conversas/1/1/foto?', url)
+        resposta = self.client.get(url)
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.content, foto_propria)
+        self.assertIn('no-store', resposta.headers['cache-control'])
+        self.login(2)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.mentor_login(2)
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.mentor_login()
+        with self.sessions() as db:
+            db.get(MentoriaDB, (1, 1)).ativo = False
+            db.commit()
+        self.assertEqual(self.client.get(url).status_code, 404)
+        self.client.post('/auth/logout')
+        self.assertEqual(self.client.get(url).status_code, 401)
+
+    def test_contato_sem_foto_utiliza_fallback(self):
+        self.seed_mentors(); self.mentor_login()
+        conversa = self.client.get('/mentoria/chat/conversas').json()[0]
+        self.assertIsNone(conversa['foto_perfil_url'])
+        self.assertEqual(self.client.get('/mentoria/chat/conversas/1/1/foto').status_code, 404)
 
     def enviar(self, texto='Olá, mentor!', chave=None, url=None):
         return self.client.post(url or self.url, json={'texto': texto, 'chave_envio': chave or str(uuid4())})

@@ -31,6 +31,7 @@ Pygments==2.20.0
 PyMySQL==1.2.0
 python-dotenv==1.2.2
 python-multipart==0.0.32
+Pillow>=11.3.0,<13.0.0
 PyYAML==6.0.3
 rich==15.0.0
 rich-toolkit==0.20.3

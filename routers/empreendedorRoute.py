@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Response
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from database import get_db
@@ -13,6 +13,7 @@ from dependencies import (
 )
 from schemas.AuthSchema.AuthSchema import MentorPublic, EmpreendedorPublic
 from services.company_identity import usuario_vinculado
+from services.foto_perfil import LIMITE_FOTO, normalizar_foto
 
 router = APIRouter(prefix="/empreendedor", tags=["Empreendedor"])
 
@@ -45,6 +46,34 @@ def criar_empreendedor(dados: EmpreendedorCreate, db: Session = Depends(get_db))
 @router.get("")
 def listar_empreendedores(user: EmpreendedorDB = Depends(get_current_user)):
     return [saida(user)]
+
+
+@router.get("/me/foto")
+def obter_foto(user: EmpreendedorDB = Depends(get_current_user)):
+    if not user.foto_perfil:
+        raise HTTPException(404, "Você ainda não adicionou uma foto de perfil.")
+    return Response(user.foto_perfil, media_type="image/jpeg", headers={
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+    })
+
+
+@router.put("/me/foto", response_model=EmpreendedorPublic)
+def salvar_foto(response: Response, foto: UploadFile = File(...),
+                db: Session = Depends(get_db),
+                user: EmpreendedorDB = Depends(get_current_user)):
+    try:
+        conteudo = foto.file.read(LIMITE_FOTO + 1)
+        user.foto_perfil = normalizar_foto(conteudo, foto.content_type)
+        db.commit()
+        db.refresh(user)
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        foto.file.close()
+    response.headers["Cache-Control"] = "no-store"
+    return EmpreendedorPublic.model_validate(user)
 
 
 @router.get("/{id_empreendedor}")

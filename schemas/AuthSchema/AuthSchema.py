@@ -9,6 +9,7 @@ class EmpreendedorPublic(BaseModel):
     telefone: str | None = None
     data_cadastro: datetime
     papel: str = "empreendedor"
+    foto_perfil_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

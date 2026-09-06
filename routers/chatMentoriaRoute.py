@@ -74,10 +74,28 @@ def conversas(ator=Depends(participante), db: Session = Depends(get_db)):
     for vinculo in query.order_by(MentoriaDB.id_mentor, MentoriaDB.id_empreendedor).all():
         pessoa = db.get(EmpreendedorDB, vinculo.id_empreendedor) if papel == 'mentor' else db.get(MentorDB, vinculo.id_mentor)
         ultima = mensagens_da_dupla(db, vinculo.id_mentor, vinculo.id_empreendedor).order_by(Mensagem.id.desc()).first()
+        foto_url = None
+        if papel == 'mentor' and pessoa.foto_perfil_url:
+            versao = pessoa.foto_perfil_url.split('?', 1)[1]
+            foto_url = f'/mentoria/chat/conversas/{vinculo.id_mentor}/{vinculo.id_empreendedor}/foto?{versao}'
         resultado.append({'id_mentor': vinculo.id_mentor, 'id_empreendedor': vinculo.id_empreendedor,
                           'nome': pessoa.nome, 'papel': 'empreendedor' if papel == 'mentor' else 'mentor',
+                          'foto_perfil_url': foto_url,
                           'ultima_mensagem': saida(ultima, ator) if ultima else None})
     return sorted(resultado, key=lambda c: c['ultima_mensagem']['id'] if c['ultima_mensagem'] else 0, reverse=True)
+
+
+@router.get('/chat/conversas/{mentor_id}/{empreendedor_id}/foto')
+def foto_participante(mentor_id: int, empreendedor_id: int,
+                     ator=Depends(participante), db: Session = Depends(get_db)):
+    vinculo_autorizado(db, ator, mentor_id, empreendedor_id)
+    pessoa = db.get(EmpreendedorDB, empreendedor_id)
+    if not pessoa or not pessoa.foto_perfil:
+        raise HTTPException(404, 'Foto não disponível.')
+    return Response(pessoa.foto_perfil, media_type='image/jpeg', headers={
+        'Cache-Control': 'private, no-store',
+        'X-Content-Type-Options': 'nosniff',
+    })
 
 
 @router.get('/chat/conversas/{mentor_id}/{empreendedor_id}/mensagens')
