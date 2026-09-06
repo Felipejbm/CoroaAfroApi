@@ -48,15 +48,15 @@ class EmpresaDB(Base):
     __tablename__= "empresa"
 
     id_empresa = Column(Integer, primary_key=True, index=True)
-    id_empreendedor = Column(Integer, ForeignKey("usuario.id_usuario"), nullable=False, unique=True)
-    nome = Column("nome_empresa", String(150), nullable=False)
+    fk_empreendedor_id_empreendedor = Column(Integer, ForeignKey("usuario.id_usuario"), nullable=False)
+    nome = Column(String(150), nullable=False)
     nome_fantasia = Column(String(150), nullable=True)
     data_fundacao = Column(Date, nullable=True)
     cnpj = Column(String(18), nullable=True, unique=True)
     segmento = Column(String(32), nullable=True)
     endereco = Column(String(255), nullable=True)
     porte = Column(String(50), nullable=True)
-    num_funcionarios = Column("numero_funcionarios", Integer, nullable=True)
+    num_funcionarios = Column(Integer, nullable=True)
     rua = Column(String(150), nullable=True)
     numero = Column(String(20), nullable=True)
     complemento = Column(String(100), nullable=True)

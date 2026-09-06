@@ -1,7 +1,6 @@
 -- phpMyAdmin SQL Dump
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
---
 
 CREATE DATABASE IF NOT EXISTS `coroa-afro` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE `coroa-afro`;
@@ -22,7 +21,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Banco de dados: `coroa-afro`
+-- Banco de dados: `coroa_afro`
 --
 
 -- --------------------------------------------------------
@@ -67,14 +66,6 @@ CREATE TABLE `empreendedor` (
   `genero` varchar(15) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Despejando dados para a tabela `empreendedor`
---
-
-(1, 'teste', 'teste@gmail.com', '123', '999', '2026-08-06', NULL, NULL, NULL),
-(2, 'teste2', 'teste2@gmail.com', '123', '999', '2026-08-06', NULL, NULL, NULL),
-(3, 'teste3', 'teste3@gmail.com', '123', '999', '2026-08-06', NULL, NULL, NULL);
-
 -- --------------------------------------------------------
 
 --
@@ -84,9 +75,16 @@ CREATE TABLE `empreendedor` (
 CREATE TABLE `empresa` (
   `id_empresa` int(11) NOT NULL,
   `nome` varchar(255) DEFAULT NULL,
+  `nome_fantasia` varchar(255) DEFAULT NULL
   `cnpj` varchar(14) DEFAULT NULL,
   `porte` varchar(10) DEFAULT NULL,
-  `endereco` varchar(255) DEFAULT NULL,
+  `rua` VARCHAR(150) DEFAULT NULL,
+  `numero` VARCHAR(20)  DEFAULT NULL,
+  `complemento` VARCHAR(100) DEFAULT NULL,
+  `bairro` VARCHAR(100) DEFAULT NULL,
+  `cidade` VARCHAR(100) DEFAULT NULL,
+  `estado` VARCHAR(2) DEFAULT NULL,
+  `cep` VARCHAR(8) DEFAULT NULL;
   `segmento` varchar(20) DEFAULT NULL,
   `faturamento_meta_mensal` decimal(10,2) DEFAULT NULL,
   `saldo_atual` decimal(10,2) DEFAULT NULL,
@@ -94,12 +92,6 @@ CREATE TABLE `empresa` (
   `data_fundacao` date DEFAULT NULL,
   `num_funcionarios` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Despejando dados para a tabela `empresa`
---
-
-(0, 'teste', 'teste', 'teste', 'teste', 'teste', NULL, NULL, NULL, '2026-08-07', 412);
 
 -- --------------------------------------------------------
 
