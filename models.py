@@ -17,6 +17,7 @@ from sqlalchemy import (
     )
 from datetime import datetime 
 from database import Base
+from sqlalchemy.orm import deferred
 from sqlalchemy.dialects.mysql import MEDIUMBLOB
 from hashlib import sha256
 
@@ -216,8 +217,25 @@ class PostagemChatDB(Base):
 
     id_post = Column(Integer, primary_key=True, index=True)
     conteudo_texto = Column(Text, nullable=False)
-    midia_url = Column(String(2048))
-    data_publicacao = Column(DateTime, default=datetime.now, nullable=False)
+    midia_url = Column(String(255))
+    data_publicacao = Column(Date, default=lambda: datetime.now().date(), nullable=False)
+    fk_empreendedor_id_empreendedor = Column(Integer, ForeignKey("empreendedor.id_empreendedor"), nullable=True)
+    id_mentor = Column(Integer, ForeignKey("mentor.id_mentor"), nullable=True)
+    imagem = deferred(Column(LargeBinary().with_variant(MEDIUMBLOB(), "mysql"), nullable=True))
+    imagem_hash = Column(String(64), nullable=True)
+    __table_args__ = (CheckConstraint('fk_empreendedor_id_empreendedor IS NULL OR id_mentor IS NULL', name='ck_postagem_autor_unico'),)
+
+
+class PostagemComentarioDB(Base):
+    __tablename__ = "postagem_comentario"
+
+    id = Column(Integer, primary_key=True)
+    id_post = Column(Integer, ForeignKey("postagem.id_post"), nullable=False, index=True)
+    id_empreendedor = Column(Integer, ForeignKey("empreendedor.id_empreendedor"), nullable=True)
+    id_mentor = Column(Integer, ForeignKey("mentor.id_mentor"), nullable=True)
+    texto = Column(Text, nullable=False)
+    criado_em = Column(DateTime, default=datetime.now, nullable=False)
+    __table_args__ = (CheckConstraint('(id_empreendedor IS NULL) <> (id_mentor IS NULL)', name='ck_comentario_autor_unico'),)
 
 class TransacaoDB(Base):
     __tablename__ = "transacoes"

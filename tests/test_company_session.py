@@ -171,10 +171,10 @@ class CompanySessionTests(unittest.TestCase):
         self.assertEqual(self.client.get("/mentoria/mentorados").status_code, 401)
 
     def test_legacy_modules_fail_closed(self):
-        for url in ("/mentor", "/trilha", "/atividade", "/postagem"):
+        for url in ("/mentor", "/trilha", "/atividade"):
             self.assertEqual(self.client.get(url).status_code, 401, url)
         self.login()
-        for url in ("/mentor", "/trilha", "/atividade", "/postagem"):
+        for url in ("/mentor", "/trilha", "/atividade"):
             self.assertEqual(self.client.get(url).status_code, 503, url)
 
     def test_company_create_edit_duplicate(self):

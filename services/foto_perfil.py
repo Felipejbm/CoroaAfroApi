@@ -11,7 +11,7 @@ FORMATOS = {"JPEG", "PNG", "WEBP"}
 TIPOS = {"image/jpeg", "image/png", "image/webp"}
 
 
-def normalizar_foto(conteudo: bytes, tipo: str | None) -> bytes:
+def normalizar_foto(conteudo: bytes, tipo: str | None, tamanho: int = 512) -> bytes:
     if len(conteudo) > LIMITE_FOTO:
         raise HTTPException(413, "A foto deve ter no máximo 5 MB.")
     if not conteudo or tipo not in TIPOS:
@@ -27,7 +27,7 @@ def normalizar_foto(conteudo: bytes, tipo: str | None) -> bytes:
                 original.verify()
             with Image.open(BytesIO(conteudo)) as original:
                 foto = ImageOps.exif_transpose(original)
-                foto.thumbnail((512, 512))
+                foto.thumbnail((tamanho, tamanho))
                 # Fundo branco para imagens transparentes e remoção de metadados.
                 rgba = foto.convert("RGBA")
                 limpa = Image.new("RGB", rgba.size, "white")
