@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = "mysql+pymysql://root:@localhost/coroa_afro"
+    database_url: str = "mysql+pymysql://root:@localhost/coroa-afro"
 
     openai_api_key: SecretStr | None = None
     openai_model: str = "gpt-5"
