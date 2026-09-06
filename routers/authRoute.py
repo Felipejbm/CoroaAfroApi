@@ -70,7 +70,16 @@ def logar(dados: LoginReq, request: Request, response: Response, db: Session = D
             )
         response.headers["Cache-Control"] = "no-store"
 
-        return {"Msg": "Login realizado com sucesso!", "Usuario": MentorPublic(mentor, access)}
+        return {
+            "Msg": "Login realizado com sucesso!",
+            "Usuario": MentorPublic(
+                id=mentor.id_mentor,
+                nome=mentor.nome,
+                email=access.email,
+                especialidade=mentor.especialidade,
+                biografia=mentor.biografia,
+            ),
+        }
     
     user = db.query(EmpreendedorDB).filter(EmpreendedorDB.email == dados.email.strip()).first()
 
@@ -114,7 +123,7 @@ def me(request: Request, response: Response, db: Session = Depends(get_db)):
         access = db.get(MentorAccessDB, mentor.id_mentor)
 
         return MentorPublic(
-            id_mentor=mentor.id_mentor,
+            id=mentor.id_mentor,
             nome=mentor.nome,
             email=access.email if access else "",
             especialidade=mentor.especialidade,

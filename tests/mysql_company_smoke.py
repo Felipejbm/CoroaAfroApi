@@ -25,7 +25,7 @@ def verificar():
         triggers = preflight.execute(text("SELECT EVENT_OBJECT_TABLE FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=DATABASE()"))
         if any(row[0] in tabelas for row in triggers):
             raise RuntimeError("Há triggers nas tabelas envolvidas; teste interrompido para revisão.")
-    assert {"nome_empresa", "numero_funcionarios", "id_usuario", "cidade", "estado"}.issubset(
+    assert {"nome", "num_funcionarios", "fk_empreendedor_id_empreendedor", "cidade", "estado"}.issubset(
         {c["name"] for c in inspect(engine).get_columns("empresa")})
     run = secrets.token_hex(10)
     emails = [f"smoke-{run}-{n}@example.invalid" for n in (1, 2)]
@@ -64,10 +64,12 @@ def verificar():
                 assert client.post("/empresa/criar-empresa", json=payload).status_code == 409
             with sessions() as db:
                 assert db.query(UsuarioDB).filter(UsuarioDB.email.in_(emails)).count() == 2
-                for cid in ids:
+                for email, cid in zip(emails, ids):
+                    empreendedor_id = db.query(EmpreendedorDB.id_empreendedor).filter_by(email=email).scalar()
                     company = db.get(EmpresaDB, cid)
-                    assert company.id_usuario and company.cnpj is None
-                    assert db.query(EmpreendedorUsuarioDB).filter_by(id_usuario=company.id_usuario).count() == 1
+                    assert company.fk_empreendedor_id_empreendedor == empreendedor_id
+                    assert company.cnpj is None
+                    assert db.get(EmpreendedorUsuarioDB, empreendedor_id) is not None
     finally:
         app.dependency_overrides.clear()
         transaction.rollback()

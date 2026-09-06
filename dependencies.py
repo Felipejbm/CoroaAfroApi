@@ -35,7 +35,7 @@ def get_current_mentor(request: Request, db: Session = Depends(get_db)) -> Mento
     cookie = request.cookies.get(COOKIE_NAME, "")
     session = db.get(MentorSessionDB, token_hash(cookie)) if cookie else None
     
-    if not session or session.expires_at <= datetime.now(timezone.utc):
+    if not session or session.expires_at <= datetime.now(timezone.utc).replace(tzinfo=None):
         raise HTTPException(401, "Entre com uma conta de mentor autorizada.")
         
     access = db.get(MentorAccessDB, session.id_mentor)

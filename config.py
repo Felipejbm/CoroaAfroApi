@@ -1,10 +1,16 @@
 from functools import lru_cache
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = "mysql+pymysql://root:@localhost/coroa-afro"
+    database_url: str = "mysql+pymysql://root:@localhost/coroa_afro"
+
+    openai_api_key: SecretStr | None = None
+    openai_model: str = "gpt-5"
+    openai_timeout_seconds: float = 30.0
+    openai_max_output_tokens: int = 2000
 
     meta_app_id: str | None = None
     meta_app_secret: str | None = None
