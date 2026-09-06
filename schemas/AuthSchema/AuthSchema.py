@@ -1,10 +1,9 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
 from typing import Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 class EmpreendedorPublic(BaseModel):
-    id_empreendedor: int
+    id: int = Field(validation_alias="id_empreendedor")
     nome: str
     email: str
     telefone: str | None = None

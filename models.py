@@ -11,7 +11,8 @@ from sqlalchemy import (
     Numeric, 
     ForeignKeyConstraint, 
     UniqueConstraint, 
-    Index
+    Index,
+    CheckConstraint
     )
 from datetime import datetime 
 from database import Base
@@ -48,7 +49,12 @@ class EmpresaDB(Base):
     __tablename__= "empresa"
 
     id_empresa = Column(Integer, primary_key=True, index=True)
-    fk_empreendedor_id_empreendedor = Column(Integer, ForeignKey("usuario.id_usuario"), nullable=False)
+    fk_empreendedor_id_empreendedor = Column(
+        Integer,
+        ForeignKey("empreendedor.id_empreendedor"),
+        nullable=False,
+        unique=True,
+    )
     nome = Column(String(150), nullable=False)
     nome_fantasia = Column(String(150), nullable=True)
     data_fundacao = Column(Date, nullable=True)
@@ -255,4 +261,55 @@ class MetaInstagramConnectionDB(Base):
         default=datetime.now,
         onupdate=datetime.now,
         nullable=False,
+    )
+
+
+class IaConversaDB(Base):
+    """Uma conversa entre um empreendedor e a assistente do Coroa."""
+
+    __tablename__ = "ia_conversa"
+
+    id_conversa = Column(Integer, primary_key=True)
+    id_empreendedor = Column(
+        Integer,
+        ForeignKey("empreendedor.id_empreendedor", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    titulo = Column(String(120), nullable=False, default="Nova conversa")
+    criada_em = Column(DateTime, nullable=False, default=datetime.now)
+    atualizada_em = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.now,
+        onupdate=datetime.now,
+    )
+    arquivada = Column(Boolean, nullable=False, default=False)
+
+    __table_args__ = (
+        Index("ix_ia_conversa_empreendedor_atualizada", "id_empreendedor", "atualizada_em"),
+    )
+
+
+class IaMensagemDB(Base):
+    """Uma pergunta do empreendedor ou uma resposta da assistente."""
+
+    __tablename__ = "ia_mensagem"
+
+    id_mensagem = Column(Integer, primary_key=True)
+    id_conversa = Column(
+        Integer,
+        ForeignKey("ia_conversa.id_conversa", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    papel = Column(String(16), nullable=False)
+    conteudo = Column(Text, nullable=False)
+    criada_em = Column(DateTime, nullable=False, default=datetime.now)
+    tokens_entrada = Column(Integer, nullable=True)
+    tokens_saida = Column(Integer, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("papel IN ('usuario', 'assistente')", name="ck_ia_mensagem_papel"),
+        Index("ix_ia_mensagem_conversa_id", "id_conversa", "id_mensagem"),
     )

@@ -275,3 +275,20 @@ O segundo teste é opt-in: inspeciona engines/triggers e usa transação externa
 para criar usuários/empresas descartáveis, testar edição e isolamento, e desfazer todos os
 registros ao final. Não é teste em dados reais de clientes. A numeração auto_increment pode
 ficar com lacunas após rollback. Não executar contra outro banco sem revisar o script.
+
+## Assistente de IA
+
+Configure `OPENAI_API_KEY` somente no `.env` local. As opções não secretas e seus exemplos
+estão no `.env.example`: modelo, timeout e limite máximo de saída. A chave nunca deve entrar
+no Git.
+
+O fluxo autenticado é: `POST /ia/conversas`, depois
+`POST /ia/conversas/{id_conversa}/mensagens`. Também existem rotas para listar conversas,
+listar mensagens e arquivar uma conversa. Cada conversa pertence ao empreendedor da sessão;
+um usuário recebe 404 ao tentar acessar a conversa de outro.
+
+A OpenAI recebe as últimas 12 mensagens e apenas um contexto comercial reduzido: primeiro
+nome, nome/nicho/porte/tamanho/cidade/UF da empresa e situação da conexão do Instagram.
+CPF, e-mail, telefone, endereço completo, CNPJ e tokens da Meta não são enviados. As chamadas
+usam a Responses API com `store=false`. Pergunta e resposta só são gravadas juntas depois de
+uma resposta válida; falhas externas não deixam uma pergunta sem resposta no histórico.

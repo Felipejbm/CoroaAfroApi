@@ -211,9 +211,9 @@ class CompanySessionTests(unittest.TestCase):
 
     def test_company_real_column_mapping_and_blank_cnpj(self):
         from models import EmpresaDB, UsuarioDB, EmpreendedorUsuarioDB
-        self.assertIn("nome_empresa", EmpresaDB.__table__.c)
-        self.assertIn("numero_funcionarios", EmpresaDB.__table__.c)
-        self.assertNotIn("nome", EmpresaDB.__table__.c)
+        self.assertIn("nome", EmpresaDB.__table__.c)
+        self.assertIn("num_funcionarios", EmpresaDB.__table__.c)
+        self.assertIn("fk_empreendedor_id_empreendedor", EmpresaDB.__table__.c)
         for n in (1, 2):
             self.login(n)
             r = self.client.post("/empresa/criar-empresa", json=self.company)
@@ -223,11 +223,12 @@ class CompanySessionTests(unittest.TestCase):
             self.assertEqual(empresa["segmento_label"], "Moda e acessórios")
             self.assertIn("Mauá", empresa["endereco"])
             self.assertNotIn("id_usuario", empresa)
+            self.assertNotIn("fk_empreendedor_id_empreendedor", empresa)
             with self.sessions() as db:
                 row = db.get(EmpresaDB, empresa["id_empresa"])
                 self.assertIsNone(row.cnpj)
                 bridge = db.get(EmpreendedorUsuarioDB, n)
-                self.assertEqual(row.id_usuario, bridge.id_usuario)
+                self.assertEqual(row.fk_empreendedor_id_empreendedor, n)
                 self.assertTrue(db.get(UsuarioDB, bridge.id_usuario).senha.startswith("pbkdf2_sha256$"))
 
     def test_company_does_not_claim_existing_usuario(self):

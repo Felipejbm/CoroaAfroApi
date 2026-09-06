@@ -23,6 +23,6 @@ app.add_middleware(
 )
 
 for router in all_router:
-    safe_prefixes = {"/auth", "/empresa", "/empreendedor", "/mentoria", "/metas", ""}
+    safe_prefixes = {"/auth", "/empresa", "/empreendedor", "/mentoria", "/metas", "/ia", ""}
     dependencies = [] if router.prefix in safe_prefixes else [Depends(require_migrated_module)]
     app.include_router(router, dependencies=dependencies)
