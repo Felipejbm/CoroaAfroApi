@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     meta_success_redirect_url: str | None = None
     frontend_origin: str = "http://localhost:5173"
     session_cookie_secure: bool = False
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: SecretStr | None = None
+    smtp_from: str = ""
+    smtp_ssl: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",
