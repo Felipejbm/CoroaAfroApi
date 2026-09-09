@@ -16,7 +16,8 @@ from models import (
     MentoriaAulaDB as Aula,
     MentoriaAtribuicaoDB as Atribuicao, 
     MentoriaProgressoDB as Progresso,
-    MentoriaCatalogoDB as Catalogo
+    MentoriaCatalogoDB as Catalogo,
+    MentoriaAvaliacaoDB as Avaliacao
     )
 from dependencies import get_current_mentor, get_current_user
 
@@ -140,6 +141,12 @@ class ProgressoEntrada(Entrada):
     concluida: bool = Field(strict=True)
 
 
+class AvaliacaoEntrada(Entrada):
+    nota_trilha: int = Field(ge=1, le=5)
+    nota_mentor: int = Field(ge=1, le=5)
+    comentario: str = Field(default="", max_length=1500)
+
+
 def propria(db, mentor, trilha_id, lock=False):
     query = db.query(Trilha).filter(Trilha.id == trilha_id, Trilha.id_mentor == mentor.id_mentor)
     trilha = (query.with_for_update() if lock else query).first()
@@ -159,9 +166,13 @@ def saida(db, trilha, empreendedor_id=None):
         concluidas = {p.id_aula for p in db.query(Progresso).join(Aula, Aula.id == Progresso.id_aula)
                       .filter(Aula.id_trilha == trilha.id, Progresso.id_empreendedor == empreendedor_id,
                               Progresso.concluida.is_(True)).all()}
+    avaliacao = db.query(Avaliacao).filter_by(id_trilha=trilha.id, id_empreendedor=empreendedor_id).first() if empreendedor_id is not None else None
     return {"id": trilha.id, "titulo": trilha.titulo, "descricao": trilha.descricao, **metadados(db, trilha),
             "publicada": trilha.publicada, "versao": trilha.versao,
             "progresso": round(100 * len(concluidas) / len(aulas)) if aulas else 0,
+            "avaliacao": ({"id": avaliacao.id, "nota_trilha": avaliacao.nota_trilha,
+                           "nota_mentor": avaliacao.nota_mentor, "comentario": avaliacao.comentario,
+                           "criada_em": avaliacao.criada_em} if avaliacao else None),
             "aulas": [{"id": a.id, "titulo": a.titulo, "conteudo": a.conteudo,
                        "video_url": a.video_url or "", "concluida": a.id in concluidas} for a in aulas]}
 
@@ -311,3 +322,35 @@ def concluir(trilha_id: int, aula_id: int, entrada: ProgressoEntrada,
     progresso.concluida = entrada.concluida
     db.commit()
     return saida(db, trilha, user.id_empreendedor)
+
+
+@router.post("/minhas-trilhas/{trilha_id}/avaliacao", status_code=201)
+def avaliar(trilha_id: int, entrada: AvaliacaoEntrada,
+            user: EmpreendedorDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    trilha = disponiveis(db, user.id_empreendedor).filter(Trilha.id == trilha_id).first()
+    if not trilha:
+        raise HTTPException(404, "Trilha não encontrada para esta conta.")
+    if db.query(Avaliacao).filter_by(id_trilha=trilha.id, id_empreendedor=user.id_empreendedor).first():
+        raise HTTPException(409, "Você já avaliou esta trilha.")
+    total = db.query(Aula.id).filter(Aula.id_trilha == trilha.id).count()
+    concluidas = db.query(Progresso.id_aula).join(Aula, Aula.id == Progresso.id_aula).filter(
+        Aula.id_trilha == trilha.id, Progresso.id_empreendedor == user.id_empreendedor,
+        Progresso.concluida.is_(True)).count()
+    if not total or concluidas != total:
+        raise HTTPException(409, "Conclua todas as aulas antes de enviar sua avaliação.")
+    item = Avaliacao(id_trilha=trilha.id, id_mentor=trilha.id_mentor,
+                     id_empreendedor=user.id_empreendedor, **entrada.model_dump())
+    db.add(item)
+    db.commit()
+    return saida(db, trilha, user.id_empreendedor)
+
+
+@router.get("/avaliacoes")
+def minhas_avaliacoes(mentor: MentorDB = Depends(get_current_mentor), db: Session = Depends(get_db)):
+    itens = db.query(Avaliacao, Trilha, EmpreendedorDB).join(Trilha, Trilha.id == Avaliacao.id_trilha).join(
+        EmpreendedorDB, EmpreendedorDB.id_empreendedor == Avaliacao.id_empreendedor).filter(
+        Avaliacao.id_mentor == mentor.id_mentor).order_by(Avaliacao.id.desc()).all()
+    return [{"id": a.id, "trilha_id": t.id, "trilha_titulo": t.titulo,
+             "empreendedor_nome": e.nome, "nota_trilha": a.nota_trilha,
+             "nota_mentor": a.nota_mentor, "comentario": a.comentario,
+             "criada_em": a.criada_em} for a, t, e in itens]

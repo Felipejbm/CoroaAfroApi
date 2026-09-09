@@ -27,3 +27,13 @@ class LoginReq(BaseModel):
     email: str = Field(min_length=3, max_length=255)
     senha: str = Field(min_length=1, max_length=1024)
     papel: Literal["empreendedor", "mentor"] = "empreendedor"
+
+class PasswordResetRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=255)
+    papel: Literal["empreendedor", "mentor"] = "empreendedor"
+
+class PasswordResetConfirm(BaseModel):
+    email: str = Field(min_length=3, max_length=255)
+    papel: Literal["empreendedor", "mentor"] = "empreendedor"
+    codigo: str = Field(pattern=r"^\d{6}$")
+    nova_senha: str = Field(min_length=8, max_length=128)

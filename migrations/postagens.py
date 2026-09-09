@@ -9,10 +9,14 @@ from models import PostagemChatDB, PostagemComentarioDB
 
 
 def migrar(aplicar=False):
-    if engine.dialect.name not in {'mysql', 'mariadb'} or engine.url.database != 'coroa-afro':
-        raise RuntimeError('Migração destinada apenas ao MySQL coroa-afro.')
+    if engine.dialect.name not in {'mysql', 'mariadb'} or engine.url.database not in {'coroa-afro', 'coroa_afro'}:
+        raise RuntimeError('Migração destinada apenas ao MySQL coroa-afro/coroa_afro.')
     insp = inspect(engine)
     comandos = []
+    if insp.has_table('empreendedor'):
+        colunas_empreendedor = {c['name']: c for c in insp.get_columns('empreendedor')}
+        if 'foto_perfil' not in colunas_empreendedor:
+            comandos.append('ALTER TABLE empreendedor ADD COLUMN foto_perfil MEDIUMBLOB NULL')
     if insp.has_table('postagem'):
         colunas = {c['name']: c for c in insp.get_columns('postagem')}
         if not {'id_post', 'conteudo_texto', 'midia_url', 'data_publicacao'}.issubset(colunas):

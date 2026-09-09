@@ -59,9 +59,9 @@ def _contexto_metas(usuario: EmpreendedorDB, db: Session) -> list[dict]:
             "valor_atual": _numero(meta.valor_atual),
             "valor_alvo": _numero(meta.valor_alvo),
             "progresso_percentual": float(round(max(0, min(100, progresso)), 2)),
-            "prazo": meta.prazo.isoformat(),
+            "prazo": meta.prazo.isoformat() if meta.prazo else None,
             "situacao": "atingida" if meta.valor_atual >= meta.valor_alvo else (
-                "prazo_encerrado" if meta.prazo < date.today() else "em_andamento"
+                "prazo_encerrado" if meta.prazo and meta.prazo < date.today() else "em_andamento"
             ),
         })
     return resultado

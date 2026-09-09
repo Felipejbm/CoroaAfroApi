@@ -1,11 +1,12 @@
 from functools import lru_cache
 
 from pydantic import SecretStr
+from typing import Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = "mysql+pymysql://root:@localhost/coroa-afro"
+    database_url: str = "mysql+pymysql://root:@localhost/coroa_afro"
 
     openai_api_key: SecretStr | None = None
     openai_model: str = "gpt-5"
@@ -20,6 +21,10 @@ class Settings(BaseSettings):
     meta_success_redirect_url: str | None = None
     frontend_origin: str = "http://localhost:5173"
     session_cookie_secure: bool = False
+    session_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
+    password_reset_demo_mode: bool = True
+    admin_email: str | None = None
+    admin_password: SecretStr | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
