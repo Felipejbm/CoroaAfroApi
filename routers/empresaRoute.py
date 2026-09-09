@@ -106,7 +106,7 @@ def criar_empresa(empresa: EmpresaEntrada, db: Session = Depends(get_db), user: 
     if db.get(EmpresaEmpreendedorDB, user.id_empreendedor):
         raise HTTPException(409, "Você já tem uma empresa cadastrada. Edite os dados existentes.")
     try:
-        usuario = criar_vinculo_usuario(db, user)
+        criar_vinculo_usuario(db, user)
         dados = empresa.model_dump()
         dados["cnpj"] = dados["cnpj"] or None
 
@@ -118,9 +118,9 @@ def criar_empresa(empresa: EmpresaEntrada, db: Session = Depends(get_db), user: 
         db.flush()
         db.add(EmpresaEmpreendedorDB(id_empreendedor=user.id_empreendedor, id_empresa=nova.id_empresa))
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
-        raise HTTPException(409, f"Não foi possível cadastrar: {e.orig}")
+        raise HTTPException(409, "Não foi possível cadastrar. Confira se já existe uma empresa com este CNPJ ou vinculada à sua conta.")
     except HTTPException:
         db.rollback()
         raise

@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy.orm import Session
@@ -13,7 +14,7 @@ router = APIRouter(prefix="/metas", tags=["Metas"])
 class MetaEntrada(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     titulo: str = Field(min_length=1, max_length=120)
-    unidade: str = Field(min_length=1, max_length=30)
+    unidade: Literal['seguidores', 'vendas', 'clientes', 'publicações', 'unidades', '%', 'R$']
     valor_inicial: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
     valor_atual: Decimal = Field(ge=0, max_digits=14, decimal_places=2)
     valor_alvo: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
@@ -22,6 +23,11 @@ class MetaEntrada(BaseModel):
 
     @model_validator(mode="after")
     def validar_alvo(self):
+        valores = (self.valor_inicial, self.valor_atual, self.valor_alvo)
+        if self.unidade == '%' and any(valor > 100 for valor in valores):
+            raise ValueError('Percentuais devem ficar entre 0 e 100.')
+        if self.unidade not in {'%', 'R$'} and any(valor != valor.to_integral_value() for valor in valores):
+            raise ValueError('Contagens devem ser números inteiros.')
         if self.valor_alvo <= self.valor_inicial:
             raise ValueError("O alvo deve ser maior que o valor inicial.")
         return self

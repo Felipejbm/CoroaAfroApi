@@ -110,6 +110,19 @@ class MentorSessionDB(Base):
     id_mentor = Column(Integer, ForeignKey("mentor.id_mentor"), nullable=False)
     expires_at = Column(DateTime, nullable=False)
 
+
+class PasswordResetDB(Base):
+    __tablename__ = "password_reset"
+    token_hash = Column(String(64), primary_key=True)
+    papel = Column(String(20), nullable=False)
+    conta_id = Column(Integer, nullable=True)
+    email_hash = Column(String(64), nullable=False, index=True)
+    ip_hash = Column(String(64), nullable=False, index=True)
+    senha_fingerprint = Column(String(64), nullable=True)
+    criado_em = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime, nullable=False, index=True)
+    usado_em = Column(DateTime, nullable=True)
+
 class MentoriaDB(Base):
     __tablename__ = "mentoria_vinculo"
     id_mentor = Column(Integer, ForeignKey("mentor.id_mentor"), primary_key=True)
