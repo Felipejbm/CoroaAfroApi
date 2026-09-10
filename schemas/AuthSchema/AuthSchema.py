@@ -14,6 +14,7 @@ class EmpreendedorPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class MentorPublic(BaseModel):
+    administrador: bool = False
     id: int
     nome: str
     email: str

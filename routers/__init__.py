@@ -35,3 +35,7 @@ all_router = [
     empreendedor_router,
     instagram_router
 ]
+
+from .iaMentorRoute import router as ia_mentor_router
+from .gestaoMentorRoute import router as gestao_mentor_router
+all_router.extend([ia_mentor_router, gestao_mentor_router])

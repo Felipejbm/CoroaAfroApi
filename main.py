@@ -23,6 +23,19 @@ app.add_middleware(
 )
 
 for router in all_router:
-    safe_prefixes = {"/auth", "/empresa", "/empreendedor", "/mentoria", "/metas", "/ia", "/postagem", ""}
+    safe_prefixes = {"/auth", "/empresa", "/empreendedor", "/mentoria", "/metas", "/ia", "/ia/mentor", "/postagem", ""}
     dependencies = [] if router.prefix in safe_prefixes else [Depends(require_migrated_module)]
     app.include_router(router, dependencies=dependencies)
+
+
+@app.get("/health", include_in_schema=False)
+def health():
+    from sqlalchemy import text
+    from sqlalchemy.exc import SQLAlchemyError
+    from fastapi import HTTPException
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        raise HTTPException(503, "Banco de dados indisponível.") from None
+    return {"status": "ok"}

@@ -65,7 +65,7 @@ def logar(dados: LoginReq, request: Request, response: Response, db: Session = D
             max_age=8 * 3600, 
             httponly=True,
             secure=get_settings().session_cookie_secure, 
-            samesite="lax", 
+            samesite=get_settings().session_cookie_samesite, 
             path="/"
             )
         response.headers["Cache-Control"] = "no-store"
@@ -74,6 +74,7 @@ def logar(dados: LoginReq, request: Request, response: Response, db: Session = D
             "Msg": "Login realizado com sucesso!",
             "Usuario": MentorPublic(
                 id=mentor.id_mentor,
+                administrador=access.administrador if access else False,
                 nome=mentor.nome,
                 email=access.email,
                 especialidade=mentor.especialidade,
@@ -102,7 +103,7 @@ def logar(dados: LoginReq, request: Request, response: Response, db: Session = D
         max_age=8 * 3600, 
         httponly=True,
         secure=get_settings().session_cookie_secure, 
-        samesite="lax", 
+        samesite=get_settings().session_cookie_samesite, 
         path="/",
     )
 
@@ -124,6 +125,7 @@ def me(request: Request, response: Response, db: Session = Depends(get_db)):
 
         return MentorPublic(
             id=mentor.id_mentor,
+                administrador=access.administrador if access else False,
             nome=mentor.nome,
             email=access.email if access else "",
             especialidade=mentor.especialidade,
@@ -140,6 +142,6 @@ def me(request: Request, response: Response, db: Session = Depends(get_db)):
 def logout(request: Request, response: Response, db: Session = Depends(get_db)):
     clear_sessions(request, db)
     db.commit()
-    response.delete_cookie(COOKIE_NAME, path="/", samesite="lax",
+    response.delete_cookie(COOKIE_NAME, path="/", samesite=get_settings().session_cookie_samesite,
                            secure=get_settings().session_cookie_secure, httponly=True)
     return {"Msg": "Sessão encerrada."}

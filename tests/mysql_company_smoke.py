@@ -49,7 +49,7 @@ def verificar():
                 assert client.post("/auth/login", json={"email": email, "senha": senha}).status_code == 200
                 assert client.get("/empresa/minha").status_code == 404
                 payload = dict(nome="Teste transacional", nome_fantasia="Teste", data_fundacao="2025-02-10",
-                    cnpj="", segmento="alimentacao", porte="MEI", num_funcionarios=2, rua="Rua de teste",
+                    cnpj="", segmento="alimentacao", porte="NAO_INFORMADO", num_funcionarios=2, rua="Rua de teste",
                     numero="S/N", complemento="", bairro="Centro", cidade="Mauá", estado="SP", cep="09300-000")
                 result = client.post("/empresa/criar-empresa", json=payload)
                 assert result.status_code == 201, f"Cadastro respondeu {result.status_code}"

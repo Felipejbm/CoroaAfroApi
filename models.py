@@ -22,6 +22,11 @@ from sqlalchemy.dialects.mysql import MEDIUMBLOB
 from hashlib import sha256
 
 class EmpreendedorDB(Base):
+    # Campos legados preservados para compatibilidade com o banco.
+    data_nascimento = Column('data_nascimento', Date(), nullable=True)
+    cpf = Column('cpf', String(length=14), nullable=True)
+    genero = Column('genero', String(length=15), nullable=True)
+
     __tablename__= "empreendedor"
 
     id_empreendedor = Column(Integer, primary_key=True, index=True)
@@ -58,6 +63,10 @@ class EmpreendedorUsuarioDB(Base):
     id_usuario = Column(Integer, ForeignKey("usuario.id_usuario"), nullable=False, unique=True)
 
 class EmpresaDB(Base):
+    # Campos legados preservados para compatibilidade com o banco.
+    faturamento_meta_mensal = Column('faturamento_meta_mensal', Numeric(precision=10, scale=2), nullable=True)
+    saldo_atual = Column('saldo_atual', Numeric(precision=10, scale=2), nullable=True)
+
     __tablename__= "empresa"
 
     id_empresa = Column(Integer, primary_key=True, index=True)
@@ -67,8 +76,8 @@ class EmpresaDB(Base):
         nullable=False,
         unique=True,
     )
-    nome = Column(String(150), nullable=False)
-    nome_fantasia = Column(String(150), nullable=True)
+    nome = Column(String(255), nullable=False)
+    nome_fantasia = Column(String(255), nullable=True)
     data_fundacao = Column(Date, nullable=True)
     cnpj = Column(String(18), nullable=True, unique=True)
     segmento = Column(String(32), nullable=True)
@@ -98,6 +107,7 @@ class AuthSessionDB(Base):
     oauth_state_hash = Column(String(64), nullable=True)
 
 class MentorAccessDB(Base):
+    administrador = Column(Boolean, nullable=False, default=False, server_default="0")
     __tablename__ = "mentor_access"
     id_mentor = Column(Integer, ForeignKey("mentor.id_mentor"), primary_key=True)
     email = Column(String(255), unique=True, nullable=False)
@@ -165,6 +175,9 @@ class MentoriaProgressoDB(Base):
     concluida = Column(Boolean, nullable=False, default=False)
 
 class TrilhaDB(Base):
+    # Campos legados preservados para compatibilidade com o banco.
+    fk_mentor_id_mentor = Column('fk_mentor_id_mentor', Integer(), ForeignKey('mentor.id_mentor'), nullable=True)
+
     __tablename__= "trilha"
 
     id_trilha = Column(Integer, primary_key=True, index=True)
@@ -172,6 +185,9 @@ class TrilhaDB(Base):
     tipo_trilha = Column(String(255), unique=True, nullable=False)
 
 class AtividadeDB(Base):
+    # Campos legados preservados para compatibilidade com o banco.
+    fk_trilha_id_trilha = Column('fk_trilha_id_trilha', Integer(), ForeignKey('trilha.id_trilha'), nullable=True)
+
     __tablename__= "atividade"
 
     id_atividade = Column(Integer, primary_key=True, index=True)
@@ -204,6 +220,10 @@ class MentoriaMensagemDB(Base):
     )
 
 class MensagemChatDB(Base):
+    # Campos legados preservados para compatibilidade com o banco.
+    fk_mentor_id_mentor = Column('fk_mentor_id_mentor', Integer(), ForeignKey('mentor.id_mentor'), nullable=True)
+    fk_empreendedor_id_empreendedor = Column('fk_empreendedor_id_empreendedor', Integer(), ForeignKey('empreendedor.id_empreendedor'), nullable=True)
+
     __tablename__="mensagem_chat"
 
     id_mensagem = Column(Integer, primary_key=True, index=True)
@@ -238,12 +258,16 @@ class PostagemComentarioDB(Base):
     __table_args__ = (CheckConstraint('(id_empreendedor IS NULL) <> (id_mentor IS NULL)', name='ck_comentario_autor_unico'),)
 
 class TransacaoDB(Base):
+    # Campos legados preservados para compatibilidade com o banco.
+    fk_empresa_id_empresa = Column('fk_empresa_id_empresa', Integer(), ForeignKey('empresa.id_empresa'), nullable=True)
+    fk_categorias_financeiras_id_categoria = Column('fk_categorias_financeiras_id_categoria', Integer(), ForeignKey('categorias_financeiras.id_categoria'), nullable=True)
+
     __tablename__ = "transacoes"
 
     id_transacao = Column(Integer, primary_key=True, index=True)
     tipo_transacao = Column(String(15), nullable=False)
-    valor = Column(Float, nullable=False)
-    data = Column(DateTime, nullable=False)
+    valor = Column(Numeric(10, 2), nullable=False)
+    data = Column(Date, nullable=False)
     status = Column(String(20), nullable=False, default="Pendente")
 
 class SaldoDB(Base):
@@ -259,13 +283,16 @@ class SaldoDB(Base):
     saldo_final = Column(Float, nullable=False)
 
 class MetricasMarketingDB(Base):
+    # Campos legados preservados para compatibilidade com o banco.
+    fk_rede_social_conexao_id_conexao = Column('fk_rede_social_conexao_id_conexao', Integer(), ForeignKey('rede_social_conexao.id_conexao'), nullable=True)
+
     __tablename__ = "metricas_marketing"
 
     id_metrica = Column(Integer, primary_key=True, index=True)
-    data_coleta = Column(DateTime,default=datetime.now, nullable=False)
+    data_coleta = Column(Date, default=lambda: datetime.now().date(), nullable=False)
     seguidores_total = Column(Integer, nullable=False)
     alcance_postagem = Column(Integer, nullable=False)
-    engajamento_taxa = Column(Integer, nullable=False)
+    engajamento_taxa = Column(Numeric(5, 2), nullable=False)
     cliques_bio = Column(Integer, nullable=False)
 
 class MetaInstagramConnectionDB(Base):
@@ -342,3 +369,98 @@ class IaMensagemDB(Base):
         CheckConstraint("papel IN ('usuario', 'assistente')", name="ck_ia_mensagem_papel"),
         Index("ix_ia_mensagem_conversa_id", "id_conversa", "id_mensagem"),
     )
+
+
+# Estruturas legadas: preservadas, sem habilitar novas rotas.
+from sqlalchemy import Table
+Table('categorias_financeiras', Base.metadata,
+    Column('id_categoria', Integer(), nullable=False, primary_key=True, autoincrement=True),
+    Column('nome_categoria', String(length=20), nullable=True),
+)
+Table('password_reset', Base.metadata,
+    Column('token_hash', String(length=64), nullable=False, primary_key=True),
+    Column('papel', String(length=20), nullable=False),
+    Column('conta_id', Integer(), nullable=True),
+    Column('email_hash', String(length=64), nullable=False),
+    Column('ip_hash', String(length=64), nullable=False),
+    Column('senha_fingerprint', String(length=64), nullable=True),
+    Column('criado_em', DateTime(), nullable=False),
+    Column('expires_at', DateTime(), nullable=False),
+    Column('usado_em', DateTime(), nullable=True),
+    Index('ix_password_reset_email_hash', 'email_hash'),
+    Index('ix_password_reset_expires_at', 'expires_at'),
+    Index('ix_password_reset_ip_hash', 'ip_hash'),
+)
+Table('produtos', Base.metadata,
+    Column('id', Integer(), nullable=False, primary_key=True, autoincrement=True),
+    Column('nome', String(length=100), nullable=False),
+    Column('preco', Float(), nullable=False),
+    Column('quantidade', Integer(), nullable=False),
+    Index('ix_produtos_id', 'id'),
+)
+Table('progresso_trilha_faz', Base.metadata,
+    Column('status_conclusao', Boolean(), nullable=True),
+    Column('data_conclusao', Date(), nullable=True),
+    Column('fk_empreendedor_id_empreendedor', Integer(), ForeignKey('empreendedor.id_empreendedor'), nullable=False, primary_key=True),
+    Column('fk_atividade_id_atividade', Integer(), ForeignKey('atividade.id_atividade'), nullable=False, primary_key=True),
+    Index('FK_progresso_trilha_faz_2', 'fk_atividade_id_atividade'),
+)
+Table('rede_social_conexao', Base.metadata,
+    Column('id_conexao', Integer(), nullable=False, primary_key=True),
+    Column('plataforma', String(length=255), nullable=True),
+    Column('token_acesso', Text(), nullable=True),
+    Column('fk_empresa_id_empresa', Integer(), ForeignKey('empresa.id_empresa'), nullable=True),
+    Index('FK_rede_social_conexao_2', 'fk_empresa_id_empresa'),
+)
+
+class IaMentorConversaDB(Base):
+    """Uma conversa entre um empreendedor e a assistente do Coroa."""
+
+    __tablename__ = "ia_mentor_conversa"
+
+    id_conversa = Column(Integer, primary_key=True)
+    id_mentor = Column(
+        Integer,
+        ForeignKey("mentor.id_mentor", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    titulo = Column(String(120), nullable=False, default="Nova conversa")
+    criada_em = Column(DateTime, nullable=False, default=datetime.now)
+    atualizada_em = Column(
+        DateTime,
+        nullable=False,
+        default=datetime.now,
+        onupdate=datetime.now,
+    )
+    arquivada = Column(Boolean, nullable=False, default=False)
+
+    __table_args__ = (
+        Index("ix_ia_mentor_conversa_empreendedor_atualizada", "id_mentor", "atualizada_em"),
+    )
+
+
+class IaMentorMensagemDB(Base):
+    """Uma pergunta do empreendedor ou uma resposta da assistente."""
+
+    __tablename__ = "ia_mentor_mensagem"
+
+    id_mensagem = Column(Integer, primary_key=True)
+    id_conversa = Column(
+        Integer,
+        ForeignKey("ia_mentor_conversa.id_conversa", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    papel = Column(String(16), nullable=False)
+    conteudo = Column(Text, nullable=False)
+    criada_em = Column(DateTime, nullable=False, default=datetime.now)
+    tokens_entrada = Column(Integer, nullable=True)
+    tokens_saida = Column(Integer, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("papel IN ('usuario', 'assistente')", name="ck_ia_mentor_mensagem_papel"),
+        Index("ix_ia_mentor_mensagem_conversa_id", "id_conversa", "id_mensagem"),
+    )
+
+
