@@ -12,6 +12,10 @@ app = FastAPI(
     swagger_ui_parameters={"docExpansion": "none"}
 )
 
+@app.get("/health", tags=["Sistema"])
+def health():
+    return {"status": "ok"}
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins= [
@@ -23,6 +27,6 @@ app.add_middleware(
 )
 
 for router in all_router:
-    safe_prefixes = {"/auth", "/empresa", "/empreendedor", "/mentoria", "/metas", "/ia", "/postagem", ""}
+    safe_prefixes = {"/auth", "/admin", "/mentor-solicitacoes", "/empresa", "/empreendedor", "/mentoria", "/metas", "/ia", "/postagem", "/assinatura", "/feedback", ""}
     dependencies = [] if router.prefix in safe_prefixes else [Depends(require_migrated_module)]
     app.include_router(router, dependencies=dependencies)

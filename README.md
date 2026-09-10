@@ -292,3 +292,25 @@ nome, nome/nicho/porte/tamanho/cidade/UF da empresa e situação da conexão do 
 CPF, e-mail, telefone, endereço completo, CNPJ e tokens da Meta não são enviados. As chamadas
 usam a Responses API com `store=false`. Pergunta e resposta só são gravadas juntas depois de
 uma resposta válida; falhas externas não deixam uma pergunta sem resposta no histórico.
+
+## Publicação do front e do backend
+
+No front hospedado, configure `VITE_API_URL` com a URL HTTPS pública do backend, sem barra
+no final. No backend, configure `FRONTEND_ORIGIN` com a URL HTTPS exata do front.
+
+Se front e backend estiverem em domínios diferentes, também use:
+
+```env
+SESSION_COOKIE_SECURE=true
+SESSION_COOKIE_SAMESITE=none
+PASSWORD_RESET_DEMO_MODE=false
+```
+
+Cadastre no provedor do backend todas as demais variáveis do `.env.example`; nunca envie o
+arquivo `.env`. Para o Instagram, altere `META_REDIRECT_URI` e
+`META_SUCCESS_REDIRECT_URL` para as URLs públicas e registre o mesmo callback no painel da
+Meta. O serviço pode usar `GET /health` como verificação de disponibilidade.
+
+Antes de publicar, execute os testes do backend e `npm run lint` seguido de `npm run build`
+no front. O `vercel.json` do front mantém as rotas do React funcionando quando uma página é
+aberta ou atualizada diretamente.

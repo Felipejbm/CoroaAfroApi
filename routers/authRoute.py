@@ -9,7 +9,9 @@ from models import (
     EmpreendedorDB, 
     MentorSessionDB, 
     MentorAccessDB, 
-    MentorDB
+    MentorDB,
+    PasswordResetDB,
+    MentorSolicitacaoDB,
     )
 from security import (
     COOKIE_NAME, 
@@ -26,10 +28,15 @@ from dependencies import (
 from schemas.AuthSchema.AuthSchema import (
     MentorPublic, 
     EmpreendedorPublic, 
-    LoginReq
+    LoginReq,
+    PasswordResetRequest,
+    PasswordResetConfirm,
     )
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
+
+RESET_EXPIRATION_MINUTES = 10
+RESET_MAX_ATTEMPTS = 5
 
 def clear_sessions(request, db):
     cookie = request.cookies.get(COOKIE_NAME)
@@ -40,11 +47,94 @@ def clear_sessions(request, db):
                 db.delete(session)
 
 
+def _normalizar_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def _conta_por_email(db: Session, email: str, papel: str):
+    if papel == "mentor":
+        return db.query(MentorAccessDB).filter(MentorAccessDB.email == email).first()
+    return db.query(EmpreendedorDB).filter(EmpreendedorDB.email == email).first()
+
+
+@router.post("/password-reset/request", dependencies=[Depends(validate_origin)])
+def solicitar_redefinicao(dados: PasswordResetRequest, db: Session = Depends(get_db)):
+    email = _normalizar_email(dados.email)
+    conta = _conta_por_email(db, email, dados.papel)
+    resposta = {"message": "Se a conta estiver cadastrada, um código de recuperação foi gerado."}
+
+    if not conta:
+        return resposta
+
+    db.query(PasswordResetDB).filter(
+        PasswordResetDB.email == email,
+        PasswordResetDB.papel == dados.papel,
+        PasswordResetDB.usado.is_(False),
+    ).update({"usado": True}, synchronize_session=False)
+
+    codigo = f"{secrets.randbelow(1_000_000):06d}"
+    db.add(PasswordResetDB(
+        email=email,
+        papel=dados.papel,
+        codigo_hash=token_hash(codigo),
+        expires_at=datetime.utcnow() + timedelta(minutes=RESET_EXPIRATION_MINUTES),
+    ))
+    db.commit()
+
+    if get_settings().password_reset_demo_mode:
+        resposta["demo_code"] = codigo
+    return resposta
+
+
+@router.post("/password-reset/confirm", dependencies=[Depends(validate_origin)])
+def confirmar_redefinicao(dados: PasswordResetConfirm, db: Session = Depends(get_db)):
+    email = _normalizar_email(dados.email)
+    redefinicao = db.query(PasswordResetDB).filter(
+        PasswordResetDB.email == email,
+        PasswordResetDB.papel == dados.papel,
+        PasswordResetDB.usado.is_(False),
+    ).order_by(PasswordResetDB.id.desc()).first()
+
+    if not redefinicao or redefinicao.expires_at < datetime.utcnow():
+        raise HTTPException(400, "Código inválido ou expirado. Solicite um novo código.")
+    if redefinicao.tentativas >= RESET_MAX_ATTEMPTS:
+        redefinicao.usado = True
+        db.commit()
+        raise HTTPException(400, "Limite de tentativas atingido. Solicite um novo código.")
+    if not secrets.compare_digest(redefinicao.codigo_hash, token_hash(dados.codigo)):
+        redefinicao.tentativas += 1
+        db.commit()
+        raise HTTPException(400, "Código inválido ou expirado. Solicite um novo código.")
+
+    conta = _conta_por_email(db, email, dados.papel)
+    if not conta:
+        redefinicao.usado = True
+        db.commit()
+        raise HTTPException(400, "Código inválido ou expirado. Solicite um novo código.")
+
+    if dados.papel == "mentor":
+        conta.senha_hash = hash_password(dados.nova_senha)
+        db.query(MentorSessionDB).filter(MentorSessionDB.id_mentor == conta.id_mentor).delete()
+    else:
+        conta.senha = hash_password(dados.nova_senha)
+        db.query(AuthSessionDB).filter(AuthSessionDB.id_empreendedor == conta.id_empreendedor).delete()
+    redefinicao.usado = True
+    db.commit()
+    return {"message": "Senha redefinida com sucesso."}
+
+
 @router.post("/login", dependencies=[Depends(validate_origin)])
 def logar(dados: LoginReq, request: Request, response: Response, db: Session = Depends(get_db)):
     if dados.papel == "mentor":
         access = db.query(MentorAccessDB).filter(MentorAccessDB.email == dados.email.strip().lower()).first()
 
+        if not access:
+            solicitacao = db.query(MentorSolicitacaoDB).filter_by(email=dados.email.strip().lower()).first()
+            if solicitacao and verify_password(dados.senha, solicitacao.senha_hash):
+                if solicitacao.status == "pendente":
+                    raise HTTPException(403, "Sua solicitação de mentor ainda está em análise.")
+                if solicitacao.status == "recusada":
+                    raise HTTPException(403, solicitacao.motivo_recusa or "Sua solicitação de mentor não foi aprovada.")
         if not access or not access.ativo or not verify_password(dados.senha, access.senha_hash):
             raise HTTPException(401, "E-mail ou senha incorretos, ou mentor não autorizado.")
         mentor = db.get(MentorDB, access.id_mentor)
@@ -65,7 +155,7 @@ def logar(dados: LoginReq, request: Request, response: Response, db: Session = D
             max_age=8 * 3600, 
             httponly=True,
             secure=get_settings().session_cookie_secure, 
-            samesite="lax", 
+            samesite=get_settings().session_cookie_samesite,
             path="/"
             )
         response.headers["Cache-Control"] = "no-store"
@@ -102,7 +192,7 @@ def logar(dados: LoginReq, request: Request, response: Response, db: Session = D
         max_age=8 * 3600, 
         httponly=True,
         secure=get_settings().session_cookie_secure, 
-        samesite="lax", 
+        samesite=get_settings().session_cookie_samesite,
         path="/",
     )
 

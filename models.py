@@ -104,11 +104,53 @@ class MentorAccessDB(Base):
     senha_hash = Column(String(255), nullable=False)
     ativo = Column(Boolean, nullable=False, default=True)
 
+class MentorSolicitacaoDB(Base):
+    __tablename__ = "mentor_solicitacao"
+    id = Column(Integer, primary_key=True)
+    nome = Column(String(255), nullable=False)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    senha_hash = Column(String(255), nullable=False)
+    especialidade = Column(String(50), nullable=False)
+    biografia = Column(Text, nullable=False)
+    status = Column(String(20), nullable=False, default="pendente", index=True)
+    motivo_recusa = Column(String(500), nullable=True)
+    criada_em = Column(DateTime, nullable=False, default=datetime.utcnow)
+    analisada_em = Column(DateTime, nullable=True)
+
+class AdminSessionDB(Base):
+    __tablename__ = "admin_session"
+    token_hash = Column(String(64), primary_key=True)
+    expires_at = Column(DateTime, nullable=False)
+
 class MentorSessionDB(Base):
     __tablename__ = "mentor_session"
     token_hash = Column(String(64), primary_key=True)
     id_mentor = Column(Integer, ForeignKey("mentor.id_mentor"), nullable=False)
     expires_at = Column(DateTime, nullable=False)
+
+class PasswordResetDB(Base):
+    __tablename__ = "password_reset"
+
+    id = Column(Integer, primary_key=True)
+    email = Column(String(255), nullable=False, index=True)
+    papel = Column(String(20), nullable=False)
+    codigo_hash = Column(String(64), nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    tentativas = Column(Integer, nullable=False, default=0)
+    usado = Column(Boolean, nullable=False, default=False)
+    criado_em = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+class AssinaturaDB(Base):
+    __tablename__ = "assinatura"
+
+    id = Column(Integer, primary_key=True)
+    id_empreendedor = Column(Integer, ForeignKey("empreendedor.id_empreendedor"), nullable=False, unique=True, index=True)
+    plano = Column(String(20), nullable=False)
+    valor_mensal = Column(Numeric(10, 2), nullable=False)
+    forma_pagamento = Column(String(20), nullable=False)
+    status = Column(String(20), nullable=False, default="ativa")
+    criada_em = Column(DateTime, nullable=False, default=datetime.utcnow)
+    atualizada_em = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class MentoriaDB(Base):
     __tablename__ = "mentoria_vinculo"
@@ -125,9 +167,13 @@ class MetaEmpreendedorDB(Base):
     valor_inicial = Column(Numeric(14, 2), nullable=False)
     valor_atual = Column(Numeric(14, 2), nullable=False)
     valor_alvo = Column(Numeric(14, 2), nullable=False)
-    prazo = Column(Date, nullable=False)
+    prazo = Column(Date, nullable=True)
     arquivada = Column(Boolean, nullable=False, default=False)
     versao = Column(Integer, nullable=False, default=1)
+    tipo = Column(String(16), nullable=False, default="manual")
+    origem = Column(String(16), nullable=False, default="manual")
+    metrica = Column(String(40), nullable=True)
+    ultima_sincronizacao = Column(DateTime, nullable=True)
 
 class MentoriaTrilhaDB(Base):
     __tablename__ = "mentoria_trilha"
@@ -163,6 +209,22 @@ class MentoriaProgressoDB(Base):
     id_aula = Column(Integer, ForeignKey("mentoria_aula.id"), primary_key=True)
     id_empreendedor = Column(Integer, ForeignKey("empreendedor.id_empreendedor"), primary_key=True)
     concluida = Column(Boolean, nullable=False, default=False)
+
+class MentoriaAvaliacaoDB(Base):
+    __tablename__ = "mentoria_avaliacao"
+    id = Column(Integer, primary_key=True)
+    id_trilha = Column(Integer, ForeignKey("mentoria_trilha.id"), nullable=False, index=True)
+    id_mentor = Column(Integer, ForeignKey("mentor.id_mentor"), nullable=False, index=True)
+    id_empreendedor = Column(Integer, ForeignKey("empreendedor.id_empreendedor"), nullable=False, index=True)
+    nota_trilha = Column(Integer, nullable=False)
+    nota_mentor = Column(Integer, nullable=False)
+    comentario = Column(Text, nullable=True)
+    criada_em = Column(DateTime, nullable=False, default=datetime.now)
+    __table_args__ = (
+        UniqueConstraint("id_trilha", "id_empreendedor", name="uq_avaliacao_trilha_empreendedor"),
+        CheckConstraint("nota_trilha BETWEEN 1 AND 5", name="ck_avaliacao_nota_trilha"),
+        CheckConstraint("nota_mentor BETWEEN 1 AND 5", name="ck_avaliacao_nota_mentor"),
+    )
 
 class TrilhaDB(Base):
     __tablename__= "trilha"
@@ -341,4 +403,26 @@ class IaMensagemDB(Base):
     __table_args__ = (
         CheckConstraint("papel IN ('usuario', 'assistente')", name="ck_ia_mensagem_papel"),
         Index("ix_ia_mensagem_conversa_id", "id_conversa", "id_mensagem"),
+    )
+
+
+class FeedbackDB(Base):
+    __tablename__ = "feedback"
+
+    id_feedback = Column(Integer, primary_key=True)
+    autor_papel = Column(String(20), nullable=False)
+    autor_id = Column(Integer, nullable=False)
+    autor_nome = Column(String(255), nullable=False)
+    nota = Column(Integer, nullable=False)
+    comentario = Column(Text, nullable=False)
+    autoriza_publicacao = Column(Boolean, nullable=False, default=False)
+    status = Column(String(20), nullable=False, default="pendente")
+    criado_em = Column(DateTime, nullable=False, default=datetime.now)
+    analisado_em = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint("autor_papel IN ('empreendedor', 'mentor')", name="ck_feedback_papel"),
+        CheckConstraint("nota BETWEEN 1 AND 5", name="ck_feedback_nota"),
+        CheckConstraint("status IN ('pendente', 'aprovado', 'recusado')", name="ck_feedback_status"),
+        Index("ix_feedback_autor_data", "autor_papel", "autor_id", "criado_em"),
     )

@@ -1,4 +1,16 @@
 MODOS_IA = {
+    "diagnostico_completo": {
+        "nome": "Diagnóstico completo",
+        "descricao": "Cruze empresa, metas, trilhas e Instagram em um plano de ação.",
+        "instrucao": (
+            "Faça um diagnóstico integrado usando todas as fontes disponíveis no contexto. "
+            "Organize obrigatoriamente a resposta nas seções: Diagnóstico atual, Oportunidades, "
+            "Prioridades, Plano de ação para 7 dias e Métricas para acompanhar. Diferencie dados "
+            "observados de interpretações, não invente informações ausentes e limite o plano a "
+            "ações realistas para uma pequena empresa."
+        ),
+        "sugestao": "Faça um diagnóstico completo do meu negócio e crie um plano para os próximos sete dias.",
+    },
     "geral": {
         "nome": "Conversa livre",
         "descricao": "Tire dúvidas e receba orientações sobre o negócio.",

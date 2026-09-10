@@ -8,6 +8,7 @@ from dependencies import get_current_user
 from models import EmpreendedorDB, IaConversaDB, IaMensagemDB
 from schemas.IaSchema.IaSchema import (
     IaConversaCriar,
+    IaConversaAtualizar,
     IaConversaPublica,
     IaMensagemCriar,
     IaMensagemPublica,
@@ -71,6 +72,50 @@ def listar_conversas(
     return consulta.order_by(IaConversaDB.atualizada_em.desc()).all()
 
 
+@router.patch("/conversas/{id_conversa}", response_model=IaConversaPublica)
+def renomear_conversa(
+    id_conversa: int,
+    dados: IaConversaAtualizar,
+    db: Session = Depends(get_db),
+    usuario: EmpreendedorDB = Depends(get_current_user),
+):
+    conversa = obter_conversa_do_usuario(id_conversa, usuario, db)
+    conversa.titulo = dados.titulo
+    conversa.atualizada_em = datetime.now()
+    db.commit()
+    db.refresh(conversa)
+    return conversa
+
+
+def fontes_do_contexto(contexto: dict) -> list[str]:
+    fontes = ["Perfil do empreendedor"]
+    if contexto.get("empresa"):
+        fontes.append("Empresa")
+    if contexto.get("metas_ativas"):
+        fontes.append("Metas")
+    if contexto.get("trilhas_em_andamento"):
+        fontes.append("Trilhas")
+    instagram = contexto.get("instagram") or {}
+    if instagram.get("dados_disponiveis"):
+        fontes.append("Instagram")
+    return fontes
+
+
+@router.delete("/conversas/{id_conversa}", status_code=204)
+def excluir_conversa(
+    id_conversa: int,
+    db: Session = Depends(get_db),
+    usuario: EmpreendedorDB = Depends(get_current_user),
+):
+    conversa = obter_conversa_do_usuario(id_conversa, usuario, db)
+    db.query(IaMensagemDB).filter(IaMensagemDB.id_conversa == id_conversa).delete(
+        synchronize_session=False
+    )
+    db.delete(conversa)
+    db.commit()
+    return Response(status_code=204)
+
+
 @router.get("/conversas/{id_conversa}/mensagens", response_model=list[IaMensagemPublica])
 def listar_mensagens(
     id_conversa: int,
@@ -107,10 +152,11 @@ async def enviar_mensagem(
         for mensagem in reversed(mensagens_anteriores)
     ]
 
+    contexto = await montar_contexto_ia(usuario, db)
     try:
         resultado = await ia_service.gerar_resposta(
             id_empreendedor=usuario.id_empreendedor,
-            contexto=await montar_contexto_ia(usuario, db),
+            contexto=contexto,
             historico=historico,
             pergunta=dados.conteudo,
             modo=dados.modo,
@@ -140,6 +186,7 @@ async def enviar_mensagem(
         conversa=conversa,
         mensagem_usuario=mensagem_usuario,
         mensagem_assistente=mensagem_assistente,
+        fontes_contexto=fontes_do_contexto(contexto),
     )
 
 

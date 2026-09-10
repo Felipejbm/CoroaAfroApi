@@ -75,6 +75,7 @@ class IaRoutesTests(unittest.TestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(resposta.json()["mensagem_usuario"]["papel"], "usuario")
         self.assertEqual(resposta.json()["mensagem_assistente"]["papel"], "assistente")
+        self.assertEqual(resposta.json()["fontes_contexto"], ["Perfil do empreendedor"])
         self.assertEqual(len(self.ia_falsa.chamadas), 1)
         self.assertEqual(
             self.ia_falsa.chamadas[0]["pergunta"],
@@ -99,6 +100,7 @@ class IaRoutesTests(unittest.TestCase):
         ids = {item["id"] for item in modos.json()}
         self.assertIn("analisar_instagram", ids)
         self.assertIn("calendario_conteudo", ids)
+        self.assertIn("diagnostico_completo", ids)
 
         id_conversa = self.client.post("/ia/conversas", json={}).json()["id_conversa"]
         resposta = self.client.post(
@@ -134,6 +136,29 @@ class IaRoutesTests(unittest.TestCase):
             json={"conteudo": "Teste"},
         )
         self.assertEqual(resposta.status_code, 409)
+
+    def test_renomeia_e_exclui_somente_a_propria_conversa(self):
+        id_conversa = self.client.post(
+            "/ia/conversas", json={"titulo": "Título antigo"}
+        ).json()["id_conversa"]
+        renomeada = self.client.patch(
+            f"/ia/conversas/{id_conversa}", json={"titulo": "  Plano semanal  "}
+        )
+        self.assertEqual(renomeada.status_code, 200)
+        self.assertEqual(renomeada.json()["titulo"], "Plano semanal")
+
+        self.usuario_atual = 2
+        self.assertEqual(
+            self.client.delete(f"/ia/conversas/{id_conversa}").status_code, 404
+        )
+        self.usuario_atual = 1
+        self.assertEqual(
+            self.client.delete(f"/ia/conversas/{id_conversa}").status_code, 204
+        )
+        self.assertEqual(
+            self.client.get(f"/ia/conversas/{id_conversa}/mensagens").status_code,
+            404,
+        )
 
 
 if __name__ == "__main__":
