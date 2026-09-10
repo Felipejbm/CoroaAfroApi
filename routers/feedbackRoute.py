@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -10,13 +10,18 @@ from models import EmpreendedorDB, FeedbackDB, MentorDB, MentorSessionDB
 from security import COOKIE_NAME, token_hash, validate_origin
 
 
-router = APIRouter(prefix="/feedback", tags=["Feedback"])
+def no_cache(response: Response):
+    response.headers["Cache-Control"] = "no-store"
+
+
+router = APIRouter(prefix="/feedback", tags=["Feedback"], dependencies=[Depends(no_cache)])
 
 
 class FeedbackEntrada(BaseModel):
-    nota: int = Field(ge=1, le=5)
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    nota: int = Field(ge=1, le=5, strict=True)
     comentario: str = Field(min_length=10, max_length=1000)
-    autoriza_publicacao: bool = False
+    autoriza_publicacao: bool = Field(default=False, strict=True)
 
 
 def participante(request: Request, db: Session = Depends(get_db)):
@@ -55,6 +60,9 @@ def meu_status(db: Session = Depends(get_db), ator=Depends(participante)):
 @router.post("", status_code=201, dependencies=[Depends(validate_origin)])
 def criar(dados: FeedbackEntrada, db: Session = Depends(get_db), ator=Depends(participante)):
     papel, autor_id, nome = ator
+    modelo = MentorDB if papel == "mentor" else EmpreendedorDB
+    coluna = MentorDB.id_mentor if papel == "mentor" else EmpreendedorDB.id_empreendedor
+    db.query(modelo).filter(coluna == autor_id).with_for_update().one()
     limite = datetime.utcnow() - timedelta(days=30)
     recente = db.query(FeedbackDB).filter(
         FeedbackDB.autor_papel == papel,
@@ -82,5 +90,5 @@ def publicos(db: Session = Depends(get_db)):
     itens = db.query(FeedbackDB).filter_by(status="aprovado", autoriza_publicacao=True).order_by(
         FeedbackDB.analisado_em.desc(), FeedbackDB.id_feedback.desc()
     ).limit(20).all()
-    return [{"id": x.id_feedback, "nome": x.autor_nome.split()[0], "papel": x.autor_papel,
+    return [{"id": x.id_feedback, "nome": (x.autor_nome.split() or ["Participante"])[0], "papel": x.autor_papel,
              "nota": x.nota, "comentario": x.comentario} for x in itens]

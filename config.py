@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import SecretStr, field_validator, model_validator
-from typing import Literal
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,7 +22,10 @@ class Settings(BaseSettings):
     meta_success_redirect_url: str | None = None
     frontend_origin: str = "http://localhost:5173"
     session_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
-    password_reset_demo_mode: bool = True
+    session_cookie_secure: bool = False
+    brevo_api_key: SecretStr | None = None
+    smtp_from: str = ""
+    password_reset_demo_mode: bool = False
     admin_email: str | None = None
     admin_password: SecretStr | None = None
     @field_validator("database_url")

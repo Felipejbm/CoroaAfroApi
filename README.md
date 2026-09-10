@@ -314,3 +314,41 @@ Meta. O serviço pode usar `GET /health` como verificação de disponibilidade.
 Antes de publicar, execute os testes do backend e `npm run lint` seguido de `npm run build`
 no front. O `vercel.json` do front mantém as rotas do React funcionando quando uma página é
 aberta ou atualizada diretamente.
+
+
+## Revisão antes de publicar
+
+- `PASSWORD_RESET_DEMO_MODE` é falso por padrão. O fluxo por código só funciona quando explicitamente habilitado e acessado pela interface de loopback local. O fluxo real por link usa HTTPS do Brevo nas rotas `/auth/recuperar-senha` e `/auth/redefinir-senha`; sem chave API e remetente configurados, a solicitação retorna 503. Não habilite o modo demonstrativo em produção.
+- A tabela `password_reset` armazena os hashes dos links de recuperação; `password_reset_codigo` armazena os códigos do fluxo demonstrativo. Não tente sobrepor os dois formatos.
+- Existem dois acessos administrativos distintos: `/admin` usa `ADMIN_EMAIL`/`ADMIN_PASSWORD` para analisar solicitações e feedbacks; `/mentoria/admin` usa a permissão `administrador` do mentor para gerenciar acessos. Uma sessão não concede a outra permissão.
+- Assinaturas continuam demonstrativas: não há cobrança, confirmação de pagamento nem gateway integrado.
+- Para um banco existente, execute as migrações novas após backup: `python migrations/admin_mentores.py`, `python migrations/assinatura.py`, `python migrations/feedbacks.py`, `python migrations/avaliacoes_mentoria.py`, `python migrations/password_reset.py` e `python migrations/metas_instagram.py --apply`. A última também permite simulação sem `--apply`. Consulte os scripts antes de executá-los; não rode migrações históricas indiscriminadamente.
+- `migrations/schema_atual.sql` e `coroa-afro.sql` são snapshots equivalentes gerados dos modelos, sem dados e sem DROP, para bancos vazios. Não substituem a migração de um banco preenchido.
+- O endpoint `/health` testa a conexão com o banco. A API cria tabelas ausentes na inicialização, mas não adiciona colunas às tabelas existentes.
+
+
+## Recuperação por e-mail no Railway
+
+Configure `BREVO_API_KEY` com uma chave **API** do Brevo (não a senha SMTP) e
+`SMTP_FROM` com um remetente validado no Brevo. O nome SMTP_FROM foi mantido por
+compatibilidade, mas o transporte usa HTTPS. Configure `FRONTEND_ORIGIN` com a
+origem do frontend no deploy; os links usam essa origem e nunca o Host do pedido.
+Reinicie a API após mudar as variáveis. Não envie o `.env` ao GitHub.
+
+O link expira em 30 minutos, é de uso único e o banco guarda somente seu hash.
+Alterar senha ou e-mail invalida links anteriores. A redefinição encerra as sessões
+da conta. Solicitações usam resposta genérica e limites por conta/IP.
+O endereço do cliente depende da configuração confiável do proxy do servidor;
+não habilite confiança indiscriminada em cabeçalhos encaminhados.
+
+O HTTP 202 confirma recebimento da solicitação, não entrega do e-mail. O envio
+ocorre em segundo plano no processo: não há fila persistente nem repetição
+automática se o servidor parar. Em falha, o usuário pode solicitar outro link.
+Os logs indicam rejeição HTTP pelo Brevo ou falha de conexão sem revelar tokens
+ou credenciais. Confira o painel de e-mails transacionais do Brevo para rejeição,
+bloqueio, bounce ou entrega. Aceitação do provedor não garante chegada à caixa de entrada.
+
+Validação local desta alteração: migrações aplicadas após backup e auditoria de
+congruência sem pendências. Em outro banco, execute as migrações listadas acima.
+O teste real de entrega permanece pendente da configuração da chave API.
+As assinaturas permanecem demonstrativas por decisão do projeto.

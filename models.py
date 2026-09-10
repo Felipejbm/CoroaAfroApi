@@ -1,21 +1,21 @@
 from sqlalchemy import (
-    Boolean, 
-    Column, 
-    Integer, 
-    String, 
-    DateTime, 
-    Float, 
-    Date, 
-    Text, 
-    ForeignKey, 
-    Numeric, 
-    ForeignKeyConstraint, 
-    UniqueConstraint, 
+    Boolean,
+    Column,
+    Integer,
+    String,
+    DateTime,
+    Float,
+    Date,
+    Text,
+    ForeignKey,
+    Numeric,
+    ForeignKeyConstraint,
+    UniqueConstraint,
     Index,
     CheckConstraint,
     LargeBinary
     )
-from datetime import datetime 
+from datetime import datetime
 from database import Base
 from sqlalchemy.orm import deferred
 from sqlalchemy.dialects.mysql import MEDIUMBLOB
@@ -84,7 +84,7 @@ class EmpreendedorDB(Base):
             return None
         versao = sha256(self.foto_perfil).hexdigest()[:16]
         return f"/empreendedor/me/foto?v={versao}"
-    
+
 class UsuarioDB(Base):
     __tablename__ = "usuario"
     id_usuario = Column(Integer, primary_key=True)
@@ -132,7 +132,7 @@ class EmpresaDB(Base):
     cidade = Column(String(100), nullable=True)
     estado = Column(String(2), nullable=True)
     cep = Column(String(8), nullable=True)
-    
+
 class EmpresaEmpreendedorDB(Base):
     __tablename__ = "empresa_empreendedor"
 
@@ -180,7 +180,8 @@ class MentorSessionDB(Base):
     expires_at = Column(DateTime, nullable=False)
 
 class PasswordResetDB(Base):
-    __tablename__ = "password_reset"
+    # Mantém a tabela antiga de tokens intacta. O fluxo por código tem outro formato.
+    __tablename__ = "password_reset_codigo"
 
     id = Column(Integer, primary_key=True)
     email = Column(String(255), nullable=False, index=True)
@@ -484,7 +485,7 @@ class FeedbackDB(Base):
     comentario = Column(Text, nullable=False)
     autoriza_publicacao = Column(Boolean, nullable=False, default=False)
     status = Column(String(20), nullable=False, default="pendente")
-    criado_em = Column(DateTime, nullable=False, default=datetime.now)
+    criado_em = Column(DateTime, nullable=False, default=datetime.utcnow)
     analisado_em = Column(DateTime, nullable=True)
 
     __table_args__ = (
@@ -543,3 +544,8 @@ class IaMentorMensagemDB(Base):
         CheckConstraint("papel IN ('usuario', 'assistente')", name="ck_ia_mentor_mensagem_papel"),
         Index("ix_ia_mentor_mensagem_conversa_id", "id_conversa", "id_mensagem"),
     )
+
+
+class PasswordResetTokenDB(Base):
+    """Mapeia a tabela de links sem alterar o formato existente."""
+    __table__ = Base.metadata.tables["password_reset"]

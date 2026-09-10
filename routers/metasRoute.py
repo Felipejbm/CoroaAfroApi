@@ -15,11 +15,18 @@ METRICAS_INSTAGRAM = {
     "seguidores": "seguidores",
     "publicacoes": "publicações",
     "alcance_7d": "contas alcançadas em 7 dias",
-    "interacoes_recentes": "interações nas 5 publicações recentes",
+    "interacoes_recentes": "interações",
 }
 
 
 class MetaEntrada(BaseModel):
+    @model_validator(mode="before")
+    @classmethod
+    def unidade_automatica(cls, dados):
+        if isinstance(dados, dict) and dados.get("tipo") == "instagram" and dados.get("metrica") in METRICAS_INSTAGRAM:
+            return {**dados, "unidade": METRICAS_INSTAGRAM[dados["metrica"]]}
+        return dados
+
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     titulo: str = Field(min_length=1, max_length=120)
     unidade: str = Field(min_length=1, max_length=30)
@@ -117,8 +124,12 @@ def editar(id_meta: int, dados: MetaEdicao, db: Session = Depends(get_db), user:
     if not query.first():
         raise HTTPException(404, "Meta não encontrada.")
     atual = query.first()
+    if dados.tipo != atual.tipo:
+        raise HTTPException(422, "O tipo da meta não pode ser alterado. Crie uma nova meta.")
     alteracoes = dados.model_dump(exclude={"versao"})
     if atual.tipo == "instagram":
+        if dados.valor_alvo <= atual.valor_inicial:
+            raise HTTPException(422, "O alvo deve ser maior que o valor inicial registrado no Instagram.")
         for campo in ("tipo", "metrica", "unidade", "valor_inicial", "valor_atual"):
             alteracoes.pop(campo, None)
     updated = query.filter_by(versao=dados.versao).update(

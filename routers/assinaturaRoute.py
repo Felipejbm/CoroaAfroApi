@@ -55,6 +55,7 @@ def confirmar_assinatura(
     db: Session = Depends(get_db),
     user: EmpreendedorDB = Depends(get_current_user),
 ):
+    db.query(EmpreendedorDB).filter_by(id_empreendedor=user.id_empreendedor).with_for_update().one()
     assinatura = db.query(AssinaturaDB).filter_by(id_empreendedor=user.id_empreendedor).first()
     if assinatura:
         assinatura.plano = dados.plano
@@ -80,6 +81,7 @@ def cancelar_assinatura(
     db: Session = Depends(get_db),
     user: EmpreendedorDB = Depends(get_current_user),
 ):
+    db.query(EmpreendedorDB).filter_by(id_empreendedor=user.id_empreendedor).with_for_update().one()
     assinatura = db.query(AssinaturaDB).filter_by(id_empreendedor=user.id_empreendedor).first()
     if not assinatura:
         raise HTTPException(404, "Você ainda não possui uma assinatura.")

@@ -111,16 +111,16 @@ def criar_empresa(empresa: EmpresaEntrada, db: Session = Depends(get_db), user: 
         dados["cnpj"] = dados["cnpj"] or None
 
         nova = EmpresaDB(
-            **dados, 
+            **dados,
             fk_empreendedor_id_empreendedor=user.id_empreendedor
         )
         db.add(nova)
         db.flush()
         db.add(EmpresaEmpreendedorDB(id_empreendedor=user.id_empreendedor, id_empresa=nova.id_empresa))
         db.commit()
-    except IntegrityError as e:
+    except IntegrityError:
         db.rollback()
-        raise HTTPException(409, f"Não foi possível cadastrar: {e.orig}")
+        raise HTTPException(409, "Não foi possível cadastrar. Confira se o CNPJ ou a conta já possui uma empresa.") from None
     except HTTPException:
         db.rollback()
         raise

@@ -1,7 +1,7 @@
 import hmac, secrets
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, EmailStr
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from config import get_settings
@@ -9,12 +9,17 @@ from database import get_db
 from models import AdminSessionDB, EmpreendedorDB, FeedbackDB, MentorAccessDB, MentorDB, MentorSolicitacaoDB, MentoriaAvaliacaoDB, MentoriaTrilhaDB
 from security import token_hash, validate_origin
 
-router = APIRouter(prefix="/admin", tags=["Administração"])
+def no_cache(response: Response):
+    response.headers["Cache-Control"] = "no-store"
+
+
+router = APIRouter(prefix="/admin", tags=["Administração"], dependencies=[Depends(no_cache)])
 ADMIN_COOKIE = "coroa_admin_session"
 
 class LoginAdmin(BaseModel):
-    email: str
-    senha: str
+    model_config = ConfigDict(extra="forbid")
+    email: EmailStr = Field(max_length=255)
+    senha: str = Field(min_length=1, max_length=128)
 class Analise(BaseModel):
     motivo: str | None = Field(default=None, max_length=500)
 
@@ -38,8 +43,8 @@ def serializar_feedback(item):
 @router.post("/login", dependencies=[Depends(validate_origin)])
 def login(dados: LoginAdmin, response: Response, db: Session = Depends(get_db)):
     cfg = get_settings(); senha = cfg.admin_password.get_secret_value() if cfg.admin_password else ""
-    email_ok = bool(cfg.admin_email) and hmac.compare_digest(dados.email.strip().lower(), cfg.admin_email.strip().lower())
-    if not email_ok or not senha or not hmac.compare_digest(dados.senha, senha):
+    email_ok = bool(cfg.admin_email) and hmac.compare_digest(dados.email.strip().lower().encode(), cfg.admin_email.strip().lower().encode())
+    if not email_ok or not senha or not hmac.compare_digest(dados.senha.encode(), senha.encode()):
         raise HTTPException(401, "Credenciais administrativas inválidas.")
     token = secrets.token_urlsafe(32)
     db.add(AdminSessionDB(token_hash=token_hash(token), expires_at=datetime.utcnow()+timedelta(hours=4))); db.commit()
@@ -51,7 +56,7 @@ def me(_: AdminSessionDB = Depends(admin_atual)): return {"papel": "admin"}
 
 @router.post("/logout")
 def logout(request: Request, response: Response, db: Session = Depends(get_db), _: AdminSessionDB = Depends(admin_atual)):
-    raw=request.cookies.get(ADMIN_COOKIE, ""); db.query(AdminSessionDB).filter_by(token_hash=token_hash(raw)).delete(); db.commit(); response.delete_cookie(ADMIN_COOKIE, path="/"); return {"message":"Sessão encerrada."}
+    raw=request.cookies.get(ADMIN_COOKIE, ""); db.query(AdminSessionDB).filter_by(token_hash=token_hash(raw)).delete(); db.commit(); response.delete_cookie(ADMIN_COOKIE, path="/", secure=get_settings().session_cookie_secure, samesite=get_settings().session_cookie_samesite, httponly=True); return {"message":"Sessão encerrada."}
 
 @router.get("/mentor-solicitacoes")
 def listar(status: str | None = None, db: Session = Depends(get_db), _: AdminSessionDB = Depends(admin_atual)):
@@ -61,7 +66,7 @@ def listar(status: str | None = None, db: Session = Depends(get_db), _: AdminSes
 
 @router.post("/mentor-solicitacoes/{solicitacao_id}/aprovar")
 def aprovar(solicitacao_id: int, db: Session = Depends(get_db), _: AdminSessionDB = Depends(admin_atual)):
-    item=db.get(MentorSolicitacaoDB, solicitacao_id)
+    item=db.query(MentorSolicitacaoDB).filter_by(id=solicitacao_id).with_for_update().first()
     if not item or item.status != "pendente": raise HTTPException(409, "Solicitação indisponível para aprovação.")
     if db.query(MentorAccessDB).filter_by(email=item.email).first():
         raise HTTPException(409, "Já existe um mentor autorizado com este e-mail.")
@@ -75,7 +80,7 @@ def aprovar(solicitacao_id: int, db: Session = Depends(get_db), _: AdminSessionD
 
 @router.post("/mentor-solicitacoes/{solicitacao_id}/recusar")
 def recusar(solicitacao_id: int, dados: Analise, db: Session = Depends(get_db), _: AdminSessionDB = Depends(admin_atual)):
-    item=db.get(MentorSolicitacaoDB, solicitacao_id)
+    item=db.query(MentorSolicitacaoDB).filter_by(id=solicitacao_id).with_for_update().first()
     if not item or item.status != "pendente": raise HTTPException(409, "Solicitação indisponível para recusa.")
     item.status="recusada"; item.motivo_recusa=dados.motivo; item.analisada_em=datetime.utcnow(); db.commit(); return serializar(item)
 

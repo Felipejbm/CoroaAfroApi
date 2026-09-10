@@ -8,13 +8,13 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import (
-    MentorDB, 
-    MentorAccessDB, 
+    MentorDB,
+    MentorAccessDB,
     EmpreendedorDB,
     MentoriaDB,
-    MentoriaTrilhaDB as Trilha, 
+    MentoriaTrilhaDB as Trilha,
     MentoriaAulaDB as Aula,
-    MentoriaAtribuicaoDB as Atribuicao, 
+    MentoriaAtribuicaoDB as Atribuicao,
     MentoriaProgressoDB as Progresso,
     MentoriaCatalogoDB as Catalogo,
     MentoriaAvaliacaoDB as Avaliacao
@@ -327,6 +327,7 @@ def concluir(trilha_id: int, aula_id: int, entrada: ProgressoEntrada,
 @router.post("/minhas-trilhas/{trilha_id}/avaliacao", status_code=201)
 def avaliar(trilha_id: int, entrada: AvaliacaoEntrada,
             user: EmpreendedorDB = Depends(get_current_user), db: Session = Depends(get_db)):
+    db.query(EmpreendedorDB).filter_by(id_empreendedor=user.id_empreendedor).with_for_update().one()
     trilha = disponiveis(db, user.id_empreendedor).filter(Trilha.id == trilha_id).first()
     if not trilha:
         raise HTTPException(404, "Trilha não encontrada para esta conta.")

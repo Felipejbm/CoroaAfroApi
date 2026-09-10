@@ -18,7 +18,11 @@ from services.ia_service import IaService, IaServiceError, get_ia_service
 from services.ia_modos import listar_modos_ia
 
 
-router = APIRouter(prefix="/ia/mentor", tags=["Assistente IA"])
+def no_cache(response: Response):
+    response.headers["Cache-Control"] = "no-store"
+
+
+router = APIRouter(prefix="/ia/mentor", tags=["Assistente IA"], dependencies=[Depends(no_cache)])
 
 
 @router.get("/modos")
@@ -83,9 +87,10 @@ def listar_mensagens(
     usuario: MentorDB = Depends(get_current_mentor),
 ):
     obter_conversa_do_usuario(id_conversa, usuario, db)
-    return db.query(IaMentorMensagemDB).filter(
+    mensagens = db.query(IaMentorMensagemDB).filter(
         IaMentorMensagemDB.id_conversa == id_conversa
-    ).order_by(IaMentorMensagemDB.id_mensagem.asc()).limit(limite).all()
+    ).order_by(IaMentorMensagemDB.id_mensagem.desc()).limit(limite).all()
+    return list(reversed(mensagens))
 
 
 @router.post("/conversas/{id_conversa}/mensagens", response_model=IaResposta)

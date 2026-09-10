@@ -10,7 +10,10 @@ class IaConversaCriar(BaseModel):
     @field_validator("titulo")
     @classmethod
     def limpar_titulo(cls, titulo: str) -> str:
-        return titulo.strip()
+        titulo = titulo.strip()
+        if not titulo:
+            raise ValueError("O título não pode estar vazio.")
+        return titulo
 
 
 class IaConversaAtualizar(BaseModel):
