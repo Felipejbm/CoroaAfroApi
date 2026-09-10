@@ -15,8 +15,16 @@ from .metasRoute import router as metas_router
 from .aprendizadoRoute import router as aprendizado_router
 from .chatMentoriaRoute import router as chat_mentoria_router
 from .iaRoute import router as ia_router
+from .assinaturaRoute import router as assinatura_router
+from .adminRoute import router as admin_router
+from .mentorSolicitacaoRoute import router as mentor_solicitacao_router
+from .feedbackRoute import router as feedback_router
 
 all_router = [
+    feedback_router,
+    mentor_solicitacao_router,
+    admin_router,
+    assinatura_router,
     ia_router,
     chat_mentoria_router,
     aprendizado_router,

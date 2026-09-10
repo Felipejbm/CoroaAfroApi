@@ -5,6 +5,7 @@ os.environ["SESSION_COOKIE_SECURE"] = "false"
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 from datetime import datetime, timedelta
+from decimal import Decimal
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -85,6 +86,28 @@ class CompanySessionTests(unittest.TestCase):
         self.assertEqual(self.client.patch(f"/metas/{meta['id']}", json=self.meta_payload(versao=1)).status_code, 409)
         self.assertEqual(self.client.get("/metas").json()[0]["versao"], 3)
 
+    @patch("routers.metasRoute.valores_reais_instagram", new_callable=AsyncMock)
+    def test_goal_instagram_uses_real_value_and_syncs(self, metricas):
+        metricas.return_value = {
+            "seguidores": Decimal("820"), "publicacoes": Decimal("15"),
+            "alcance_7d": Decimal("240"), "interacoes_recentes": Decimal("70"),
+        }
+        self.login()
+        payload = self.meta_payload(
+            tipo="instagram", metrica="seguidores", valor_inicial="0",
+            valor_atual="0", valor_alvo="1000", origem="ia",
+        )
+        criada = self.client.post("/metas", json=payload)
+        self.assertEqual(criada.status_code, 201, criada.text)
+        self.assertEqual(criada.json()["valor_inicial"], 820.0)
+        self.assertEqual(criada.json()["valor_atual"], 820.0)
+        self.assertEqual(criada.json()["tipo"], "instagram")
+        self.assertEqual(criada.json()["origem"], "ia")
+        metricas.return_value["seguidores"] = Decimal("850")
+        atualizada = self.client.get("/metas").json()[0]
+        self.assertEqual(atualizada["valor_atual"], 850.0)
+        self.assertIsNotNone(atualizada["ultima_sincronizacao"])
+
     def test_goals_owner_role_and_origin(self):
         self.login()
         meta = self.client.post("/metas", json=self.meta_payload()).json()
@@ -94,6 +117,30 @@ class CompanySessionTests(unittest.TestCase):
         self.assertEqual(self.client.post("/metas", headers={"Origin": "https://untrusted.invalid"}, json=self.meta_payload()).status_code, 403)
         self.seed_mentors(); self.mentor_login()
         self.assertEqual(self.client.get("/metas").status_code, 401)
+
+    def test_goal_without_deadline_stays_active(self):
+        self.login()
+        resposta = self.client.post("/metas", json=self.meta_payload(prazo=None))
+        self.assertEqual(resposta.status_code, 201, resposta.text)
+        self.assertIsNone(resposta.json()["prazo"])
+        self.assertEqual(resposta.json()["status"], "em_andamento")
+
+    def test_platform_feedback_privacy_and_cooldown(self):
+        from models import FeedbackDB
+        self.login()
+        dados = {"nota": 5, "comentario": "A plataforma está muito útil.", "autoriza_publicacao": False}
+        resposta = self.client.post("/feedback", json=dados)
+        self.assertEqual(resposta.status_code, 201, resposta.text)
+        self.assertEqual(self.client.post("/feedback", json=dados).status_code, 409)
+        self.assertEqual(self.client.get("/feedback/publicos").json(), [])
+        with self.sessions() as db:
+            item = db.query(FeedbackDB).one()
+            item.status = "aprovado"
+            item.autoriza_publicacao = True
+            db.commit()
+        publico = self.client.get("/feedback/publicos").json()
+        self.assertEqual(publico[0]["nome"], "Teste")
+        self.assertNotIn("autor_id", publico[0])
 
     def test_goals_validation_and_overdue(self):
         self.login()
@@ -135,6 +182,31 @@ class CompanySessionTests(unittest.TestCase):
         self.assertEqual(self.mentor_login(2).status_code, 200)
         self.assertEqual(self.client.get("/mentoria/mentorados").json(), [])
         self.assertEqual(self.client.get("/mentoria/mentorados/1").status_code, 404)
+
+    def test_trail_evaluation_requires_completion_and_is_unique(self):
+        from models import (MentoriaAtribuicaoDB, MentoriaAulaDB, MentoriaDB,
+                            MentoriaProgressoDB, MentoriaTrilhaDB)
+        self.seed_mentors()
+        with self.sessions() as db:
+            trilha = MentoriaTrilhaDB(id_mentor=1, titulo="Trilha avaliada", descricao="Conteúdo", publicada=True)
+            db.add(trilha); db.flush()
+            aula = MentoriaAulaDB(id_trilha=trilha.id, ordem=0, titulo="Aula", conteudo="Conteúdo")
+            db.add(aula); db.flush()
+            db.add(MentoriaAtribuicaoDB(id_trilha=trilha.id, id_empreendedor=1))
+            db.add(MentoriaProgressoDB(id_aula=aula.id, id_empreendedor=1, concluida=False))
+            db.commit(); trilha_id, aula_id = trilha.id, aula.id
+        self.login()
+        dados = {"nota_trilha": 5, "nota_mentor": 4, "comentario": "Aprendi bastante."}
+        self.assertEqual(self.client.post(f"/mentoria/minhas-trilhas/{trilha_id}/avaliacao", json=dados).status_code, 409)
+        self.assertEqual(self.client.put(f"/mentoria/minhas-trilhas/{trilha_id}/aulas/{aula_id}", json={"concluida": True}).status_code, 200)
+        resposta = self.client.post(f"/mentoria/minhas-trilhas/{trilha_id}/avaliacao", json=dados)
+        self.assertEqual(resposta.status_code, 201, resposta.text)
+        self.assertEqual(resposta.json()["avaliacao"]["nota_trilha"], 5)
+        self.assertEqual(self.client.post(f"/mentoria/minhas-trilhas/{trilha_id}/avaliacao", json=dados).status_code, 409)
+        self.mentor_login()
+        avaliacoes = self.client.get("/mentoria/avaliacoes")
+        self.assertEqual(avaliacoes.status_code, 200, avaliacoes.text)
+        self.assertEqual(avaliacoes.json()[0]["empreendedor_nome"], "Teste 1")
 
     def test_mentor_revoked_access_and_link(self):
         from models import MentorAccessDB, MentoriaDB

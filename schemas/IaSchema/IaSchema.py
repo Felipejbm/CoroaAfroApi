@@ -13,9 +13,22 @@ class IaConversaCriar(BaseModel):
         return titulo.strip()
 
 
+class IaConversaAtualizar(BaseModel):
+    titulo: str = Field(min_length=1, max_length=120)
+
+    @field_validator("titulo")
+    @classmethod
+    def limpar_titulo(cls, titulo: str) -> str:
+        titulo = titulo.strip()
+        if not titulo:
+            raise ValueError("O título não pode estar vazio.")
+        return titulo
+
+
 class IaMensagemCriar(BaseModel):
     conteudo: str = Field(min_length=1, max_length=4000)
     modo: Literal[
+        "diagnostico_completo",
         "geral",
         "analisar_instagram",
         "calendario_conteudo",
@@ -59,3 +72,4 @@ class IaResposta(BaseModel):
     conversa: IaConversaPublica
     mensagem_usuario: IaMensagemPublica
     mensagem_assistente: IaMensagemPublica
+    fontes_contexto: list[str] = Field(default_factory=list)
