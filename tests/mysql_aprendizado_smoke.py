@@ -48,7 +48,7 @@ def verificar():
             db.add(MentorAccessDB(id_mentor=mentor_id, email=email_mentor, senha_hash=hash_password(senha), ativo=True))
 
             db.commit()
-        with TestClient(app, headers={'Origin': 'http://localhost:5173'}) as client:
+        with TestClient(app, headers={'Origin': 'https://coroa-afro.vercel.app/'}) as client:
             assert client.post('/auth/login', json={'email': email_mentor, 'senha': senha, 'papel': 'mentor'}).status_code == 200
             dados = {'categoria': 'instagram', 'publico_alvo': 'Iniciantes', 'titulo': 'Trilha transacional', 'descricao': '', 'aulas': [{'titulo': 'Aula teste', 'conteudo': 'Conteúdo teste.'}]}
             r = client.post('/mentoria/trilhas', json=dados)

@@ -43,7 +43,7 @@ def verificar():
                 db.add(EmpreendedorDB(nome="Teste transacional descartável", email=email,
                                       senha=hash_password(senha), telefone="11900000000"))
             db.commit()
-        with TestClient(app, headers={"Origin": "http://localhost:5173"}) as client:
+        with TestClient(app, headers={"Origin": "https://coroa-afro.vercel.app/"}) as client:
             ids = []
             for email in emails:
                 assert client.post("/auth/login", json={"email": email, "senha": senha}).status_code == 200

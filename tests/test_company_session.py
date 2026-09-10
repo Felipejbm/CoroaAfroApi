@@ -32,7 +32,7 @@ class CompanySessionTests(unittest.TestCase):
                 db.add(EmpreendedorDB(id_empreendedor=n, nome=f"Teste {n}", email=f"teste{n}@example.com",
                                       senha="senha-teste", telefone="11999999999"))
             db.commit()
-        self.client = TestClient(app, headers={"Origin": "http://localhost:5173"})
+        self.client = TestClient(app, headers={"Origin": "https://coroa-afro.vercel.app/"})
         self.company = dict(nome="Empresa teste", data_fundacao="2020-01-01", cnpj="",
                             segmento="moda", rua="Rua teste", numero="S/N", bairro="Centro",
                             cidade="Mauá", estado="SP", cep="09300-000", porte="MEI", num_funcionarios=0)

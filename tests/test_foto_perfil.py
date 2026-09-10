@@ -43,7 +43,7 @@ class FotoPerfilTests(unittest.TestCase):
                 db.add(EmpreendedorDB(id_empreendedor=n, nome=f"Pessoa {n}",
                                      email=f"pessoa{n}@example.com", senha="senha-teste", telefone="11999999999"))
             db.commit()
-        self.client = TestClient(app, headers={"Origin": "http://localhost:5173"})
+        self.client = TestClient(app, headers={"Origin": "https://coroa-afro.vercel.app/"})
 
     def tearDown(self):
         self.client.close()

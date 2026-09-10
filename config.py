@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = "mysql+pymysql://root:@localhost/coroa_afro"
+    database_url: str = "mysql://root:WkGbmGsUyBAUArTcmVEqDsottgJgCSdK@mysql.railway.internal:3306/railway"
 
     openai_api_key: SecretStr | None = None
     openai_model: str = "gpt-5"
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     meta_token_encryption_key: str | None = None
     meta_graph_api_version: str = "v26.0"
     meta_success_redirect_url: str | None = None
-    frontend_origin: str = "http://localhost:5173"
+    frontend_origin: str = "https://coroa-afro.vercel.app/"
     session_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
     session_cookie_secure: bool = False
     brevo_api_key: SecretStr | None = None

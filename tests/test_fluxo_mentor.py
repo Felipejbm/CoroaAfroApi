@@ -2,7 +2,7 @@ import os
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 os.environ["SESSION_COOKIE_SECURE"] = "false"
 os.environ["SESSION_COOKIE_SAMESITE"] = "lax"
-os.environ["FRONTEND_ORIGIN"] = "http://localhost:5173"
+os.environ["FRONTEND_ORIGIN"] = "https://coroa-afro.vercel.app/"
 import unittest
 from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
@@ -38,7 +38,7 @@ class FluxoMentorTests(unittest.TestCase):
             db.add(EmpreendedorDB(id_empreendedor=1,nome="Empreendedor",email="e@example.com",senha="x",telefone="11999999999"))
             db.add(AuthSessionDB(token_hash=token_hash("empreendedor"),id_empreendedor=1,expires_at=datetime.now(timezone.utc).replace(tzinfo=None)+timedelta(hours=1)))
             db.commit()
-        self.client=TestClient(app,headers={"Origin":"http://localhost:5173"})
+        self.client=TestClient(app,headers={"Origin":"https://coroa-afro.vercel.app/"})
         self.identidade("mentor1")
     def identidade(self, value):
         self.client.cookies.clear()
