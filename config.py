@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    database_url: str = "mysql://root:WkGbmGsUyBAUArTcmVEqDsottgJgCSdK@mysql.railway.internal:3306/railway"
+    database_url: str = "mysql+pymysql://root:@localhost:3306/coroa_afro"
 
     openai_api_key: SecretStr | None = None
     openai_model: str = "gpt-5"
