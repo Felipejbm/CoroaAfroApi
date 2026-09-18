@@ -17,6 +17,20 @@ from services.meta_graph import MetaGraphError, MetaGraphService
 router = APIRouter(tags=["Instagram"])
 
 
+def _redirect_instagram(settings: Settings, status: str, reason: str | None = None):
+    if not settings.meta_success_redirect_url:
+        return None
+    parts = urlsplit(settings.meta_success_redirect_url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    query["instagram"] = status
+    if reason:
+        query["reason"] = reason
+    return RedirectResponse(
+        urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)),
+        status_code=303,
+    )
+
+
 def authenticated_instagram_id(
     empreendedor_id: int | None = Query(default=None, gt=0),
     user: EmpreendedorDB = Depends(get_current_user),
@@ -110,7 +124,7 @@ def iniciar_oauth_meta(
 
 @router.get("/auth/meta/callback", summary="Callback OAuth da Meta")
 async def callback_oauth_meta(
-    state: str,
+    state: str | None = None,
     code: str | None = None,
     error: str | None = None,
     error_description: str | None = None,
@@ -118,16 +132,25 @@ async def callback_oauth_meta(
     settings: Settings = Depends(get_settings),
     session: AuthSessionDB = Depends(get_auth_session),
 ):
-    if not session.oauth_state_hash or not hmac.compare_digest(session.oauth_state_hash, token_hash(state)):
+    if not state or not session.oauth_state_hash or not hmac.compare_digest(session.oauth_state_hash, token_hash(state)):
+        redirect = _redirect_instagram(settings, "error", "invalid_state")
+        if redirect:
+            return redirect
         raise HTTPException(400, "Autorização inválida ou já utilizada. Inicie novamente.")
     session.oauth_state_hash = None
     db.commit()
     if error:
+        redirect = _redirect_instagram(settings, "error", "cancelled")
+        if redirect:
+            return redirect
         raise HTTPException(
             status_code=400,
             detail=error_description or "A autorização da Meta foi cancelada.",
         )
     if not code:
+        redirect = _redirect_instagram(settings, "error", "missing_code")
+        if redirect:
+            return redirect
         raise HTTPException(status_code=400, detail="Authorization code não recebido.")
 
     service = _service(settings)
@@ -138,6 +161,10 @@ async def callback_oauth_meta(
         user_token, expires_at = await service.exchange_code(code)
         accounts = await service.discover_instagram_accounts(user_token)
     except MetaGraphError as exc:
+        reason = "expired" if exc.status_code == 401 else "permissions" if exc.status_code == 403 else "meta_error"
+        redirect = _redirect_instagram(settings, "error", reason)
+        if redirect:
+            return redirect
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 
     empreendedor = db.query(EmpreendedorDB).filter(
@@ -146,6 +173,9 @@ async def callback_oauth_meta(
     if not empreendedor:
         raise HTTPException(status_code=404, detail="Empreendedor não encontrado.")
     if not accounts:
+        redirect = _redirect_instagram(settings, "error", "no_professional_account")
+        if redirect:
+            return redirect
         raise HTTPException(
             status_code=400,
             detail=(
@@ -169,8 +199,9 @@ async def callback_oauth_meta(
     connection.token_expires_at = expires_at
     db.commit()
 
-    if settings.meta_success_redirect_url:
-        return RedirectResponse(settings.meta_success_redirect_url, status_code=303)
+    redirect = _redirect_instagram(settings, "connected")
+    if redirect:
+        return redirect
     return {
         "message": "Instagram conectado com sucesso.",
         "connection": {
@@ -203,18 +234,24 @@ async def obter_perfil_instagram(
 async def listar_midias_instagram(
     empreendedor_id: int = Depends(authenticated_instagram_id),
     limit: int = Query(default=25, ge=1, le=100),
+    after: str | None = Query(default=None, min_length=1, max_length=512),
     db: Session = Depends(get_db),
 ):
     connection, service, token = _connection(empreendedor_id, db)
+    params: dict[str, Any] = {
+        "fields": (
+            "id,caption,media_type,media_product_type,media_url,thumbnail_url,"
+            "permalink,timestamp,like_count,comments_count"
+        ),
+        "limit": limit,
+    }
+    if after:
+        params["after"] = after
     return await _graph_call(
         service.graph_get(
             f"/{connection.instagram_business_account_id}/media",
             token,
-            fields=(
-                "id,caption,media_type,media_product_type,media_url,thumbnail_url,"
-                "permalink,timestamp,like_count,comments_count"
-            ),
-            limit=limit,
+            **params,
         )
     )
 

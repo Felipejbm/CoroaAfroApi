@@ -32,7 +32,7 @@ class CompanySessionTests(unittest.TestCase):
                 db.add(EmpreendedorDB(id_empreendedor=n, nome=f"Teste {n}", email=f"teste{n}@example.com",
                                       senha="senha-teste", telefone="11999999999"))
             db.commit()
-        self.client = TestClient(app, headers={"Origin": "https://coroa-afro.vercel.app/"})
+        self.client = TestClient(app, headers={"Origin": "https://coroa-afro.vercel.app"})
         self.company = dict(nome="Empresa teste", data_fundacao="2020-01-01", cnpj="",
                             segmento="moda", rua="Rua teste", numero="S/N", bairro="Centro",
                             cidade="Mauá", estado="SP", cep="09300-000", porte="MEI", num_funcionarios=0)
@@ -372,7 +372,10 @@ class CompanySessionTests(unittest.TestCase):
 
     def test_forged_oauth_callback(self):
         self.login()
-        self.assertEqual(self.client.get("/auth/meta/callback?state=forged&code=fake").status_code, 400)
+        response = self.client.get("/auth/meta/callback?state=forged&code=fake", follow_redirects=False)
+        self.assertEqual(response.status_code, 303)
+        self.assertIn("instagram=error", response.headers["location"])
+        self.assertIn("reason=invalid_state", response.headers["location"])
 
     def test_mysql_schema(self):
         for table in Base.metadata.sorted_tables:
@@ -406,7 +409,9 @@ class CompanySessionTests(unittest.TestCase):
             r = self.client.get("/auth/meta/callback?state=test-state&code=fake", follow_redirects=False)
             self.assertIn(r.status_code, (200, 303), r.text)
             self.assertNotIn("fake-page-token", r.text)
-            self.assertEqual(self.client.get("/auth/meta/callback?state=test-state&code=fake").status_code, 400)
+            repeated = self.client.get("/auth/meta/callback?state=test-state&code=fake", follow_redirects=False)
+            self.assertEqual(repeated.status_code, 303)
+            self.assertIn("reason=invalid_state", repeated.headers["location"])
         with self.sessions() as db:
             connection = db.query(MetaInstagramConnectionDB).one()
             self.assertEqual(connection.id_empreendedor, 1)

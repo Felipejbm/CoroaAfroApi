@@ -37,7 +37,7 @@ class RevisaoApiTests(unittest.TestCase):
         self.assertEqual(r.status_code,503)
         self.assertNotIn('demo_code',r.text)
     def test_local_demo_single_use(self):
-        with TestClient(app,client=('127.0.0.1',40000),headers={'Origin':'https://coroa-afro.vercel.app/'}) as client:
+        with TestClient(app,client=('127.0.0.1',40000),headers={'Origin':'https://coroa-afro.vercel.app'}) as client:
             with patch('routers.authRoute.get_settings',return_value=SimpleNamespace(password_reset_demo_mode=True)):
                 result=client.post('/auth/password-reset/request',json={'email':'teste1@example.com','papel':'empreendedor'})
                 self.assertEqual(result.status_code,200,result.text)

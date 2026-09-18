@@ -1,6 +1,8 @@
 import base64
+import asyncio
 import hashlib
 import hmac
+import logging
 import secrets
 from datetime import datetime, timedelta
 from typing import Any
@@ -11,6 +13,9 @@ from cryptography.fernet import Fernet, InvalidToken
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from config import Settings
+
+
+logger = logging.getLogger(__name__)
 
 
 class MetaGraphError(Exception):
@@ -27,7 +32,6 @@ class MetaGraphService:
     SCOPES = (
         "pages_show_list",
         "pages_read_engagement",
-        "business_management",
         "instagram_basic",
         "instagram_manage_insights",
     )
@@ -179,14 +183,34 @@ class MetaGraphService:
             url = f"{self.GRAPH_BASE_URL}/{self.version}/{path.lstrip('/')}"
 
         try:
-            async with httpx.AsyncClient(timeout=20.0) as client:
-                response = await client.request(method, url, params=params)
+            async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=8.0)) as client:
+                for attempt in range(3):
+                    response = await client.request(method, url, params=params)
+                    if response.status_code not in {429, 500, 502, 503, 504} or attempt == 2:
+                        break
+                    retry_after = response.headers.get("retry-after", "")
+                    delay = min(float(retry_after), 3.0) if retry_after.replace(".", "", 1).isdigit() else 0.5 * (2 ** attempt)
+                    await asyncio.sleep(delay)
             payload = response.json()
         except (httpx.HTTPError, ValueError) as exc:
-            raise MetaGraphError("Falha de comunicação com a Meta Graph API.") from exc
+            raise MetaGraphError("A Meta está temporariamente indisponível. Tente novamente em instantes.") from exc
 
         if response.is_error or "error" in payload:
             error = payload.get("error", {})
-            message = error.get("message", "A Meta Graph API recusou a solicitação.")
-            raise MetaGraphError(message, 400 if response.status_code < 500 else 502)
+            code = error.get("code")
+            subcode = error.get("error_subcode")
+            logger.warning(
+                "Meta recusou solicitação: HTTP %s, code=%s, subcode=%s.",
+                response.status_code, code, subcode,
+            )
+            if response.status_code == 401 or code == 190:
+                raise MetaGraphError("A autorização do Instagram expirou ou foi revogada. Conecte novamente.", 401)
+            if response.status_code == 429 or code in {4, 17, 32, 613}:
+                raise MetaGraphError("A Meta limitou temporariamente as consultas. Aguarde um pouco e tente novamente.", 429)
+            if code in {10, 200}:
+                raise MetaGraphError("A conta não concedeu todas as permissões necessárias. Reconecte o Instagram e autorize o acesso.", 403)
+            raise MetaGraphError(
+                "A Meta não conseguiu concluir a solicitação. Tente reconectar o Instagram.",
+                400 if response.status_code < 500 else 502,
+            )
         return payload
