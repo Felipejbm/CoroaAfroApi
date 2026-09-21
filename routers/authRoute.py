@@ -1,6 +1,9 @@
 import secrets
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import RedirectResponse
+from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from config import get_settings
 from database import get_db
@@ -12,8 +15,10 @@ from models import (
     MentorDB,
     PasswordResetDB,
     MentorSolicitacaoDB,
+    SocialSignupDB,
     )
 from services.company_identity import usuario_vinculado
+from services.social_oauth import SocialOAuthError, provider_config, verified_identity
 from security import (
     COOKIE_NAME,
     hash_password,
@@ -32,12 +37,27 @@ from schemas.AuthSchema.AuthSchema import (
     LoginReq,
     PasswordResetRequest,
     PasswordResetConfirm,
+    SocialSignupComplete,
+    SocialSignupPublic,
     )
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 RESET_EXPIRATION_MINUTES = 10
 RESET_MAX_ATTEMPTS = 5
+OAUTH_STATE_MAX_AGE = 10 * 60
+SOCIAL_SIGNUP_MAX_AGE = 15 * 60
+SOCIAL_SIGNUP_COOKIE = "coroa_social_signup"
+
+
+def _genero_banco(value: str | None):
+    if not value:
+        return None
+    return {
+        "Masculino": "masculino",
+        "Feminino": "feminino",
+        "Prefiro não informar": "nao_informado",
+    }.get(value, value.strip()[:15])
 
 def clear_sessions(request, db):
     cookie = request.cookies.get(COOKIE_NAME)
@@ -46,6 +66,151 @@ def clear_sessions(request, db):
             session = db.get(model, token_hash(cookie))
             if session:
                 db.delete(session)
+
+
+def _set_entrepreneur_session(request: Request, response: Response, db: Session, user: EmpreendedorDB):
+    clear_sessions(request, db)
+    token = secrets.token_urlsafe(32)
+    db.add(AuthSessionDB(
+        token_hash=token_hash(token),
+        id_empreendedor=user.id_empreendedor,
+        expires_at=datetime.utcnow() + timedelta(hours=8),
+    ))
+    db.commit()
+    settings = get_settings()
+    response.set_cookie(
+        COOKIE_NAME, token, max_age=8 * 3600, httponly=True,
+        secure=settings.session_cookie_secure,
+        samesite=settings.session_cookie_samesite, path="/",
+    )
+    response.headers["Cache-Control"] = "no-store"
+
+
+def _oauth_redirect(reason: str = "success") -> RedirectResponse:
+    settings = get_settings()
+    return RedirectResponse(f"{settings.frontend_origin}/login?oauth={reason}", status_code=303)
+
+
+def _social_signup_redirect(provider: str) -> RedirectResponse:
+    return RedirectResponse(
+        f"{get_settings().frontend_origin}/cadastro-empreendedor?social={provider}",
+        status_code=303,
+    )
+
+
+def _social_signup(request: Request, db: Session) -> SocialSignupDB:
+    token = request.cookies.get(SOCIAL_SIGNUP_COOKIE, "")
+    signup = db.get(SocialSignupDB, token_hash(token)) if token else None
+    if not signup or signup.expires_at < datetime.utcnow():
+        if signup:
+            db.delete(signup)
+            db.commit()
+        raise HTTPException(401, "Seu cadastro social expirou. Comece novamente pela tela de login.")
+    return signup
+
+
+@router.get("/oauth/{provider}")
+def iniciar_oauth(provider: str):
+    try:
+        oauth = provider_config(provider, get_settings())
+    except SocialOAuthError as exc:
+        raise HTTPException(503, str(exc)) from exc
+    state = secrets.token_urlsafe(32)
+    response = RedirectResponse(oauth.authorization_url_for(state), status_code=303)
+    response.set_cookie(
+        f"coroa_oauth_{provider}", state, max_age=OAUTH_STATE_MAX_AGE,
+        httponly=True, secure=get_settings().session_cookie_secure,
+        samesite="lax", path=f"/auth/oauth/{provider}/callback",
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@router.get("/oauth/{provider}/callback")
+async def callback_oauth(
+    provider: str,
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+    db: Session = Depends(get_db),
+):
+    cookie_name = f"coroa_oauth_{provider}"
+    expected_state = request.cookies.get(cookie_name)
+    if error:
+        response = _oauth_redirect("cancelled")
+    elif not code or not state or not expected_state or not secrets.compare_digest(state, expected_state):
+        response = _oauth_redirect("invalid_state")
+    else:
+        try:
+            oauth = provider_config(provider, get_settings())
+            identity = await verified_identity(oauth, code)
+            user = db.query(EmpreendedorDB).filter(func.lower(EmpreendedorDB.email) == identity.email).first()
+            if not user:
+                signup_token = secrets.token_urlsafe(32)
+                db.add(SocialSignupDB(
+                    token_hash=token_hash(signup_token), provider=provider,
+                    email=identity.email, nome=identity.name,
+                    expires_at=datetime.utcnow() + timedelta(seconds=SOCIAL_SIGNUP_MAX_AGE),
+                ))
+                db.commit()
+                response = _social_signup_redirect(provider)
+                response.set_cookie(
+                    SOCIAL_SIGNUP_COOKIE, signup_token, max_age=SOCIAL_SIGNUP_MAX_AGE,
+                    httponly=True, secure=get_settings().session_cookie_secure,
+                    samesite=get_settings().session_cookie_samesite, path="/",
+                )
+            else:
+                response = _oauth_redirect()
+                _set_entrepreneur_session(request, response, db, user)
+        except SocialOAuthError:
+            response = _oauth_redirect("provider_error")
+    response.delete_cookie(
+        cookie_name, path=f"/auth/oauth/{provider}/callback",
+        secure=get_settings().session_cookie_secure, httponly=True, samesite="lax",
+    )
+    return response
+
+
+@router.get("/social-signup", response_model=SocialSignupPublic)
+def obter_cadastro_social(request: Request, db: Session = Depends(get_db)):
+    signup = _social_signup(request, db)
+    return SocialSignupPublic(provider=signup.provider, nome=signup.nome, email=signup.email)
+
+
+@router.post("/social-signup", status_code=201, dependencies=[Depends(validate_origin)])
+def concluir_cadastro_social(
+    dados: SocialSignupComplete,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    signup = _social_signup(request, db)
+    if db.query(EmpreendedorDB).filter(func.lower(EmpreendedorDB.email) == signup.email).first():
+        raise HTTPException(409, "Já existe uma conta com esse e-mail. Volte ao login.")
+
+    user = EmpreendedorDB(
+        nome=signup.nome,
+        email=signup.email,
+        senha=hash_password(secrets.token_urlsafe(48)),
+        telefone=dados.telefone.strip(),
+        cpf=dados.cpf.strip() if dados.cpf else None,
+        genero=_genero_banco(dados.genero),
+        data_nascimento=dados.data_nascimento,
+    )
+    db.add(user)
+    db.delete(signup)
+    try:
+        db.flush()
+        _set_entrepreneur_session(request, response, db, user)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Já existe uma conta com esse e-mail.") from None
+    response.delete_cookie(
+        SOCIAL_SIGNUP_COOKIE, path="/", secure=get_settings().session_cookie_secure,
+        httponly=True, samesite=get_settings().session_cookie_samesite,
+    )
+    return {"message": "Conta criada com sucesso.", "Empreendedor": EmpreendedorPublic.model_validate(user)}
 
 
 def _normalizar_email(email: str) -> str:
@@ -192,25 +357,7 @@ def logar(dados: LoginReq, request: Request, response: Response, db: Session = D
     if not user.senha.startswith("pbkdf2_sha256$"):
         user.senha = hash_password(dados.senha)
 
-    clear_sessions(request, db)
-    token = secrets.token_urlsafe(32)
-    db.add(AuthSessionDB(
-        token_hash=token_hash(token),
-        id_empreendedor=user.id_empreendedor,
-        expires_at=datetime.utcnow() + timedelta(hours=8),
-    ))
-    db.commit()
-    response.set_cookie(
-        COOKIE_NAME,
-        token,
-        max_age=8 * 3600,
-        httponly=True,
-        secure=get_settings().session_cookie_secure,
-        samesite=get_settings().session_cookie_samesite,
-        path="/",
-    )
-
-    response.headers["Cache-Control"] = "no-store"
+    _set_entrepreneur_session(request, response, db, user)
 
     return {
         "Msg": "Login realizado com sucesso!",

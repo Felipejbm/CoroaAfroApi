@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -38,3 +38,16 @@ class PasswordResetConfirm(BaseModel):
     papel: Literal["empreendedor", "mentor"] = "empreendedor"
     codigo: str = Field(pattern=r"^\d{6}$")
     nova_senha: str = Field(min_length=8, max_length=128)
+
+
+class SocialSignupPublic(BaseModel):
+    provider: Literal["google", "linkedin"]
+    nome: str
+    email: str
+
+
+class SocialSignupComplete(BaseModel):
+    telefone: str = Field(min_length=8, max_length=20)
+    cpf: str | None = Field(default=None, max_length=14)
+    genero: str | None = Field(default=None, max_length=30)
+    data_nascimento: date | None = None

@@ -147,6 +147,16 @@ class AuthSessionDB(Base):
     expires_at = Column(DateTime, nullable=False)
     oauth_state_hash = Column(String(64), nullable=True)
 
+
+class SocialSignupDB(Base):
+    __tablename__ = "social_signup"
+
+    token_hash = Column(String(64), primary_key=True)
+    provider = Column(String(20), nullable=False)
+    email = Column(String(255), nullable=False, index=True)
+    nome = Column(String(255), nullable=False)
+    expires_at = Column(DateTime, nullable=False, index=True)
+
 class MentorAccessDB(Base):
     administrador = Column(Boolean, nullable=False, default=False, server_default="0")
     __tablename__ = "mentor_access"

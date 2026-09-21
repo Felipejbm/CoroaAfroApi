@@ -33,3 +33,6 @@ class EmpreendedorCreate(BaseModel):
     senha: str
     telefone: str
     data_cadastro: date
+    data_nascimento: date | None = None
+    cpf: str | None = None
+    genero: str | None = None

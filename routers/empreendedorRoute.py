@@ -18,6 +18,16 @@ from services.foto_perfil import LIMITE_FOTO, normalizar_foto
 router = APIRouter(prefix="/empreendedor", tags=["Empreendedor"])
 
 
+def genero_banco(value: str | None):
+    if not value:
+        return None
+    return {
+        "Masculino": "masculino",
+        "Feminino": "feminino",
+        "Prefiro não informar": "nao_informado",
+    }.get(value, value.strip()[:15])
+
+
 def saida(user: EmpreendedorDB):
     dados_publicos = EmpreendedorPublic.model_validate(user)
 
@@ -31,8 +41,13 @@ def saida(user: EmpreendedorDB):
 def criar_empreendedor(dados: EmpreendedorCreate, db: Session = Depends(get_db)):
     if not dados.nome.strip() or not dados.email.strip() or not dados.senha or not dados.telefone.strip():
         raise HTTPException(422, "Preencha nome, e-mail, senha e telefone.")
-    novo = EmpreendedorDB(nome=dados.nome.strip(), email=dados.email.strip(),
-                         senha=hash_password(dados.senha), telefone=dados.telefone.strip())
+    novo = EmpreendedorDB(
+        nome=dados.nome.strip(), email=dados.email.strip().lower(),
+        senha=hash_password(dados.senha), telefone=dados.telefone.strip(),
+        data_nascimento=dados.data_nascimento,
+        cpf=dados.cpf.strip() if dados.cpf else None,
+        genero=genero_banco(dados.genero),
+    )
     db.add(novo)
     try:
         db.commit()

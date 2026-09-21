@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     meta_token_encryption_key: str | None = None
     meta_graph_api_version: str = "v26.0"
     meta_success_redirect_url: str | None = None
+    google_client_id: str | None = None
+    google_client_secret: SecretStr | None = None
+    google_redirect_uri: str | None = None
+    linkedin_client_id: str | None = None
+    linkedin_client_secret: SecretStr | None = None
+    linkedin_redirect_uri: str | None = None
     frontend_origin: str = "https://coroa-afro.vercel.app/"
     session_cookie_samesite: Literal["lax", "strict", "none"] = "lax"
     session_cookie_secure: bool = False

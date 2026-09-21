@@ -26,6 +26,35 @@ Abra `http://localhost:8000/docs`. Em outro terminal, execute o frontend. O arqu
 
 O `.env.example` contém apenas nomes e exemplos. Cada integrante cria seu `.env`, que é ignorado pelo Git. Credenciais compartilhadas da Meta devem ser entregues por canal privado; em produção, configure-as no gerenciador de segredos da hospedagem. Nunca coloque segredo em `VITE_*`, porque variáveis do Vite vão para o navegador.
 
+### Login com Google e LinkedIn
+
+O login social autentica empreendedores que já tenham uma conta no Coroa Afro com o
+mesmo e-mail verificado. Ele não cria cadastros incompletos automaticamente e não é
+usado para contas de mentor.
+
+No Google Cloud, crie um cliente OAuth do tipo aplicação Web e cadastre como URI de
+redirecionamento `https://SEU-BACKEND/auth/oauth/google/callback`. Configure no backend:
+
+```env
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=https://SEU-BACKEND/auth/oauth/google/callback
+```
+
+No LinkedIn Developers, adicione ao aplicativo o produto **Sign In with LinkedIn using
+OpenID Connect**, cadastre `https://SEU-BACKEND/auth/oauth/linkedin/callback` como URI de
+redirecionamento e configure:
+
+```env
+LINKEDIN_CLIENT_ID=
+LINKEDIN_CLIENT_SECRET=
+LINKEDIN_REDIRECT_URI=https://SEU-BACKEND/auth/oauth/linkedin/callback
+```
+
+Em produção, mantenha também `FRONTEND_ORIGIN`, `SESSION_COOKIE_SECURE=true` e
+`SESSION_COOKIE_SAMESITE=none`. As URIs cadastradas nos provedores precisam coincidir
+exatamente com as variáveis, incluindo protocolo, domínio e caminho.
+
 Antes de enviar mudanças:
 
 ```powershell
